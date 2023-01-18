@@ -87,7 +87,7 @@ class PID:
             rate.sleep()
     
 if __name__ == '__main__':
-    altitude_Kp = 200
+    altitude_Kp = 50
     altitude_Ki = 0
     altitude_Kd = 0
     target_z  = 1.0
