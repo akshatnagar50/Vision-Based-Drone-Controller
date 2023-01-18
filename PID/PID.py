@@ -64,6 +64,7 @@ class PID:
             obj.rcAUX1=1500
             obj.rcThrottle=altitude_PID_output
             self.pub.publish(obj)
+            print("rcThrottle = ",altitude_PID_output)
         else:
             obj=PlutoMsg()
             obj.rcPitch=1500
@@ -74,7 +75,8 @@ class PID:
             obj.rcAUX2=1500
             obj.rcAUX1=1500
             obj.rcThrottle=1800 
-            self.pub.publish(obj)            
+            self.pub.publish(obj)
+            print("rcThrottle = 1800")
 
     def setKp(self,msg):
         self.Kp=msg.data
