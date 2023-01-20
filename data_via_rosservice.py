@@ -16,7 +16,9 @@ class request_data():
 		data = rospy.Service('PlutoService', PlutoPilot, self.access_data)
 		
 	def access_data(self, req):
-		r,p,y = req.roll, req.pitch, req.yaw
+		r, p, yaw, marker_height, marker_x, marker_y = 0, 0, 0, -1, 0, 0
+		r,p,yaw = req.roll, req.pitch, req.yaw
+
 		# print ("accx = " + str(req.accX), "accy = " + str(req.accY), "accz = " + str(req.accZ))
 		# print ("gyrox = " + str(req.gyroX), "gyroy = " + str(req.gyroY), "gyroz = " + str(req.gyroZ))
 		# print ("magx = " + str(req.magX), "magy = " + str(req.magY), "magz = " + str(req.magZ))
@@ -46,7 +48,6 @@ class request_data():
 		bad_dist = np.array(
 			[[-0.14822482,  0.52992297, -0.005417,   -0.00265437, -0.75054646]])
 
-		#rospy.init_node("Detection")
 		rate = rospy.Rate(10)
 		pub = rospy.Publisher("Detection", PoseStamped, queue_size=10)
 		obj = PoseStamped()
@@ -54,19 +55,15 @@ class request_data():
 		ret, frame = cap.read()
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		params = aruco.DetectorParameters_create()
-		corners, ids, _ = aruco.detectMarkers(
-			gray, aruco_dict, parameters=params)
+		corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters=params)
 
-		if corners:
-			aruco.drawDetectedMarkers(frame, corners)
-			cv2.imshow('Frame',frame)
+		aruco.drawDetectedMarkers(frame, corners)
 
-		rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(
-			corners, marker_size, bad_mtx, bad_dist)
+		rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(corners, marker_size, bad_mtx, bad_dist)
 
-		marker_height = -1
+		x1,y1,z1 = -1,-1,-1
 
-		if rvecs is not None and tvecs is not None:
+		if	rvecs is not None  and tvecs is not None:
 			rvec = rvecs[0]
 			rmat, _ = cv2.Rodrigues(rvec)
 			tvec = tvecs[0]
@@ -77,24 +74,35 @@ class request_data():
 			pose_mat = cv2.hconcat((rmat, tvec))
 			tvec = tvecs[0]
 			if tvec is not None:
-				marker_height = tvec[0][2]
-
-
-
-		if marker_height != -1:
-			obj.pose.position.x = tvec[0][0]
-			obj.pose.position.y = tvec[0][1]
-			obj.pose.position.z = tvec[0][2]
+				x1 = tvec[0][0]
+				y1 = tvec[0][1]
+				z1 = tvec[0][2]
+				
+			obj.pose.position.x = x1
+			obj.pose.position.y = y1
+			obj.pose.position.z = z1
 			obj.pose.orientation.x = r
 			obj.pose.orientation.y = p
-			obj.pose.orientation.z = y
+			obj.pose.orientation.z = yaw
+			pub.publish(obj)
+			print(obj)
+			
+
+		else:
+			obj.pose.position.x = -1
+			obj.pose.position.y = -1
+			obj.pose.position.z = -1
+			obj.pose.orientation.x = r
+			obj.pose.orientation.y = p
+			obj.pose.orientation.z = yaw
 			pub.publish(obj)
 			print (obj)
-			rospy.loginfo("Publishing")
+
+		rospy.loginfo("Publishing")
 
 
 		return PlutoPilotResponse(rcAUX2 =1500)
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(-1)
 test = request_data()
 rospy.spin()

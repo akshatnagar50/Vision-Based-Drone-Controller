@@ -1,12 +1,29 @@
+#!/usr/bin/env python3
 from cmath import inf
 import time
 import rospy
 from plutodrone.msg import PlutoMsg
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Float32
-
+from matplotlib import pyplot as plt
+import pickle
 
 class PID:
+
+    def arm(self,pub):
+        obj=PlutoMsg()
+        obj.rcPitch=1500
+        obj.rcRoll=1500
+        obj.rcYaw=1500
+        obj.rcAUX4=1500
+        obj.rcAUX3=1500
+        obj.rcAUX2=1500                
+        obj.rcAUX1=1500
+        obj.rcThrottle=1000
+        t=time.time()
+        while(time.time()-t<5):
+            pub.publish(obj)
+        print('SLept')
     """
     Implements a PID controller.
     """
@@ -24,11 +41,14 @@ class PID:
         self.last_error = 0
         self.last_time = time.time()
         self.last_feedback = 0
+        self.plotlist_throttle=[]
+        self.plotlist_height=[]
         self.last_output = 0
         self.set_limits(1000, 1875, -inf, inf)
         rospy.init_node("PID")
-        rospy.Subscriber("Detected",PoseStamped,self.getZ)
         self.pub=rospy.Publisher("/drone_command",PlutoMsg,queue_size=10)
+        self.arm(self.pub)
+        rospy.Subscriber("Detection",PoseStamped,self.getZ)
         rospy.Subscriber("Kp",Float32,self.setKp)
 
 
@@ -39,8 +59,8 @@ class PID:
         # self.min_int = min_int
 
     def update(self, feedback: float) -> float:
-        error = self.target - feedback
-        self.Pterm = 1500 + self.Kp * error
+        error = -(self.target - feedback)
+        self.Pterm = 1700 + self.Kp * error
         output = self.Pterm  #+ self.Iterm + self.Dterm
         if output < self.min:
             return self.min
@@ -51,7 +71,7 @@ class PID:
 
 
     def getZ(self,z_value):
-        current_z = z_value.pose.orientation.x
+        current_z = z_value.pose.position.z
         if current_z!=-1:
             altitude_PID_output = self.update(current_z)
             obj=PlutoMsg()
@@ -62,8 +82,14 @@ class PID:
             obj.rcAUX3=1500
             obj.rcAUX2=1500
             obj.rcAUX1=1500
-            obj.rcThrottle=altitude_PID_output
+            obj.rcThrottle=int(altitude_PID_output)
             self.pub.publish(obj)
+            self.plotlist_throttle.append(int(altitude_PID_output-1000)/10)
+            self.plotlist_height.append(int(current_z*100))
+            # plt.plot(self.plotlist_throttle)self.plotlist_height)
+            k=plt.plot([self.plotlist_throttle,self.plotlist_height])
+            file=open('Graph.pickle','wb')
+            pickle.dump(k,file)
             print("rcThrottle = ",altitude_PID_output)
         else:
             obj=PlutoMsg()
@@ -87,9 +113,9 @@ class PID:
             rate.sleep()
     
 if __name__ == '__main__':
-    altitude_Kp = 50
+    altitude_Kp = 2750
     altitude_Ki = 0
     altitude_Kd = 0
-    target_z  = 1.0
+    target_z  = 0.75
     altitude_PID = PID(altitude_Kp,altitude_Ki,altitude_Kd,target_z,0)
     altitude_PID.main()
