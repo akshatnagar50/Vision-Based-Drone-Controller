@@ -7,6 +7,18 @@ from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Float32
 from matplotlib import pyplot as plt
 import pickle
+import pandas as pd
+rc_th=[]
+rc_r =[]
+rc_p =[]
+rc_y =[]
+sen_r =[]
+sen_p =[]
+sen_y  =[]
+cam_x = []
+cam_y =[]
+cam_z =[]
+# import csv
 
 class PID:
 
@@ -40,6 +52,7 @@ class PID:
         # self.target = target
 
         self.Dterm = 0
+        self.df=pd.DataFrame()
         self.Iterm = 0
         self.last_error = 0
         self.last_time = time.time()    
@@ -76,7 +89,9 @@ class PID:
         return output
         
     def update_yaw(self, feedback: float) -> float:
-        error = (0 - feedback)
+        # if feedback>180:
+        #     feedback = feedback -360
+        error = (180 - feedback)
         self.Pterm_yaw = 1500 + self.Kp_yaw * error
         output = self.Pterm_yaw
         if output < self.min:
@@ -108,7 +123,17 @@ class PID:
         self.last_output = output
         return output
 
-    def controller_out(self,current_data):
+    def controller_out(self,current_data:PoseStamped):
+        global rc_th
+        global rc_p
+        global rc_y
+        global rc_r
+        global sen_r 
+        global sen_p 
+        global sen_y 
+        global cam_x 
+        global cam_y 
+        global cam_z 
 
         current_z = current_data.pose.position.z
         current_x = current_data.pose.position.x
@@ -125,6 +150,16 @@ class PID:
             obj.rcAUX3=1500
             obj.rcAUX2=1500
             obj.rcAUX1=1500
+            rc_th.append(obj.rcThrottle)
+            rc_r.append(obj.rcRoll)
+            rc_p.append(obj.rcPitch)
+            rc_y.append(obj.rcYaw)
+            sen_r.append(current_data.pose.orientation.x)
+            sen_p.append(current_data.pose.orientation.y)
+            sen_y.append(current_data.pose.orientation.z)
+            cam_x.append(current_data.pose.position.x)
+            cam_y.append(current_data.pose.position.y)
+            cam_z.append(current_data.pose.position.z)
             self.pub.publish(obj)
             self.plotlist_throttle.append(int(altitude_PID_output-1000)/10)
             self.plotlist_height.append(int(current_z*100))
@@ -133,6 +168,18 @@ class PID:
             file=open('Graph.pickle','wb')
             pickle.dump(k,file)
             print("rcThrottle = ",altitude_PID_output)
+            self.df['rc_th']=rc_th
+            self.df['rc_th']=rc_th
+            self.df['rc_r ']=rc_r 
+            self.df['rc_p ']=rc_p 
+            self.df['rc_y ']=rc_y 
+            self.df['sen_r']=sen_r
+            self.df['sen_p']=sen_p
+            self.df['sen_y']=sen_y
+            self.df['cam_x']=cam_x
+            self.df['cam_y']=cam_y
+            self.df['cam_z']=cam_z
+            self.df.to_csv('Data.csv')
         else:
             obj=PlutoMsg()
             obj.rcPitch=1500
@@ -164,12 +211,30 @@ class PID:
             rate.sleep()
     
 if __name__ == '__main__':
-    altitude_Kp = 2750
-    roll_Kp=500
-    pitch_Kp=500
-    yaw_Kp = 500
-    # altitude_Ki = 0
-    # altitude_Kd = 0
-    # target_z  = 0.75
-    altitude_PID = PID(roll_Kp,pitch_Kp,altitude_Kp,yaw_Kp)
-    altitude_PID.main()
+    try:
+        altitude_Kp = 2750
+        roll_Kp=200
+        pitch_Kp=200
+        yaw_Kp = 50
+        # altitude_Ki = 0
+        # altitude_Kd = 0
+        # target_z  = 0.75
+        altitude_PID = PID(roll_Kp,pitch_Kp,altitude_Kp,yaw_Kp)
+        altitude_PID.main()
+    except KeyboardInterrupt:
+        print ("keyboarrrdd")
+        #df=pd.DataFrame()
+        #df['rc_th']=rc_th
+        #df['rc_th']=rc_th
+        #df['rc_r ']=rc_r 
+        #df['rc_p ']=rc_p 
+        #df['rc_y ']=rc_y 
+        #df['sen_r']=sen_r
+        #df['sen_p']=sen_p
+        #df['sen_y']=sen_y
+        #df['cam_x']=cam_x
+        #df['cam_y']=cam_y
+        #df['cam_z']=cam_z
+        #df.to_csv('Data.csv')
+        pass
+
