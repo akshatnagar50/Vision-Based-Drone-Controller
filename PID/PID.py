@@ -40,27 +40,61 @@ class PID:
     Implements a PID controller.
     """
 
-    def __init__(self, Kp_roll: float, Kp_pitch: float, Kp: float,Kp_yaw: float) -> None:
+    def __init__(self, K_roll: float, K_pitch: float, K_z: float,K_yaw: float, dt:float, tau:float) -> None:
         
-        self.Kp = Kp
-        self.Kp_roll=Kp_roll
-        self.Kp_pitch=Kp_pitch
-        self.Kp_yaw=Kp_yaw
-        # self.Ki = Ki
-        # self.Kd = Kd
-        # self.tau = tau
+        self.dt = dt
+        self.Kp_z = K_z[0]
+        self.Ki_z = K_z[1]
+        self.Kd_z = K_z[2]
+
+        self.Kp_roll=K_roll[0]
+        self.Ki_roll=K_roll[1]
+        self.Kd_roll=K_roll[2]
+
+        self.Kp_pitch=K_pitch[0]
+        self.Ki_pitch=K_pitch[1]
+        self.Kd_pitch=K_pitch[2]
+        
+        self.Kp_yaw=K_yaw[0]
+        self.Ki_yaw=K_yaw[1]
+        self.Kd_yaw=K_yaw[2]
+
+        self.tau = tau
         # self.target = target
 
-        self.Dterm = 0
         self.df=pd.DataFrame()
-        self.Iterm = 0
-        self.last_error = 0
-        self.last_time = time.time()    
-        self.last_feedback = 0
+
+        self.Dterm_z = 0
+        self.Iterm_z = 0
+        self.Dterm_roll = 0
+        self.Iterm_roll = 0
+        self.Dterm_pitch = 0
+        self.Iterm_pitch = 0
+        self.Dterm_yaw = 0
+        self.Iterm_yaw = 0
+
+        self.last_error_z = 0
+        self.last_error_roll = 0
+        self.last_error_pitch = 0
+        self.last_error_yaw = 0
+
+        self.last_feedback_z = 0
+        self.last_feedback_roll = 0
+        self.last_feedback_pitch = 0
+        self.last_feedback_yaw = 0
+
+        self.last_output_z = 0
+        self.last_output_roll = 0
+        self.last_output_pitch = 0
+        self.last_output_yaw = 0
+
+        self.last_time = time.time()   
+
         self.plotlist_throttle=[]
         self.plotlist_height=[]
-        self.last_output = 0
+
         self.set_limits(1000, 1875, -inf, inf)
+
         rospy.init_node("PID")
         self.pub=rospy.Publisher("/drone_command",PlutoMsg,queue_size=10)
         self.arm(self.pub)
@@ -77,51 +111,80 @@ class PID:
         self.min = min
         # self.min_int = min_int
 
-    def update(self, feedback: float) -> float:
+    def update_z(self, feedback: float) -> float:
+
         error = -(0.75 - feedback)
-        self.Pterm = 1700 + self.Kp * error
-        output = self.Pterm  #+ self.Iterm + self.Dterm
+        self.Pterm_z = 1700 + self.Kp_z * error
+        self.Iterm_z += (error + self.last_error_z) * 0.5 * self.Ki_z * self.dt
+        self.Dterm_z = (-2 * self.Kd_z * (feedback - self.last_feedback_z)
+                      + (2 * self.tau - self.dt) * self.Dterm_z / (2 * self.tau + self.dt))
+
+        output = self.Pterm_z  + self.Iterm_z + self.Dterm_z
         if output < self.min:
             return self.min
         if output > self.max:
             return self.max
-        self.last_output = output
+        self.last_output_z = output
+        self.last_error_z = error
+        self.last_feedback_z = feedback
         return output
-        
-    def update_yaw(self, feedback: float) -> float:
-        # if feedback>180:
-        #     feedback = feedback -360
-        error = (180 - feedback)
-        self.Pterm_yaw = 1500 + self.Kp_yaw * error
-        output = self.Pterm_yaw
-        if output < self.min:
-            return self.min
-        if output > self.max:
-            return self.max
-        self.last_output = output
-        return output
-        
+
+
     def update_roll(self, feedback: float) -> float:
         error = (0 - feedback)
         self.Pterm_roll = 1500 + self.Kp_roll * error
-        output = self.Pterm_roll
+        self.Iterm_roll += (error + self.last_error_roll) * 0.5 * self.Ki_roll * self.dt
+        self.Dterm_roll = (-2 * self.Kd_roll * (feedback - self.last_feedback_roll)
+                      + (2 * self.tau - self.dt) * self.Dterm_roll / (2 * self.tau + self.dt))
+
+        output = self.Pterm_roll + self.Iterm_roll + self.Dterm_roll
         if output < self.min:
             return self.min
         if output > self.max:
             return self.max
-        self.last_output = output
+        self.last_output_roll = output
+        self.last_error_roll = error
+        self.last_feedback_roll = feedback
         return output
         
+        
     def update_pitch(self, feedback: float) -> float: 
+
         error = (0 - feedback)
         self.Pterm_pitch = 1500 + self.Kp_pitch * error
-        output = self.Pterm_pitch
+        self.Iterm_pitch += (error + self.last_error_pitch) * 0.5 * self.Ki_pitch * self.dt
+        self.Dterm_pitch = (-2 * self.Kd_pitch * (feedback - self.last_feedback_pitch)
+                      + (2 * self.tau - self.dt) * self.Dterm_pitch / (2 * self.tau + self.dt))
+
+        output = self.Pterm_pitch + self.Iterm_pitch + self.Dterm_pitch
         if output < self.min:
             return self.min
         if output > self.max:
             return self.max
-        self.last_output = output
+        self.last_output_pitch = output
+        self.last_error_pitch = error
+        self.last_feedback_pitch = feedback
         return output
+
+    def update_yaw(self, feedback: float) -> float:
+        # if feedback>180:Dt
+        #     feedback = feedback -360
+        error = (180 - feedback)
+        self.Pterm_yaw = 1500 + self.Kp_yaw * error
+        self.Iterm_yaw += (error + self.last_error_yaw) * 0.5 * self.Ki_yaw * self.dt
+        self.Dterm_yaw = (-2 * self.Kd_yaw * (feedback - self.last_feedback_yaw)
+                      + (2 * self.tau - self.dt) * self.Dterm_yaw / (2 * self.tau + self.dt))
+
+        output = self.Pterm_yaw + self.Iterm_yaw + self.Dterm_yaw
+        if output < self.min:
+            return self.min
+        if output > self.max:
+            return self.max
+        self.last_output_yaw = output
+        self.last_error_yaw = error
+        self.last_feedback_yaw = feedback
+        return output
+        
 
     def controller_out(self,current_data:PoseStamped):
         global rc_th
@@ -142,7 +205,7 @@ class PID:
         altitude_PID_output = self.update(current_z)
         if current_z!=-1:
             obj=PlutoMsg()
-            obj.rcThrottle=int(self.update(current_z))
+            obj.rcThrottle=int(self.update_z(current_z))
             obj.rcPitch=int(self.update_pitch(current_x))
             obj.rcRoll=int(self.update_roll(current_y))
             obj.rcYaw=int(self.update_yaw(current_yaw))
@@ -212,15 +275,16 @@ class PID:
     
 if __name__ == '__main__':
     try:
+        K_z = [2750, 0, 0]
+        K_roll = [200, 0, 0]
+        K_pitch = [200, 0, 0]
+        K_yaw = [50, 0, 0]
         altitude_Kp = 2750
         roll_Kp=200
         pitch_Kp=200
         yaw_Kp = 50
-        # altitude_Ki = 0
-        # altitude_Kd = 0
-        # target_z  = 0.75
-        altitude_PID = PID(roll_Kp,pitch_Kp,altitude_Kp,yaw_Kp)
-        altitude_PID.main()
+        pid = PID(K_roll,K_pitch,K_z,K_yaw,0.1,0.01)
+        pid.main()
     except KeyboardInterrupt:
         print ("keyboarrrdd")
         #df=pd.DataFrame()
@@ -237,4 +301,3 @@ if __name__ == '__main__':
         #df['cam_z']=cam_z
         #df.to_csv('Data.csv')
         pass
-
