@@ -9,12 +9,6 @@ isAutoPilotOn = 0
 # Protocol pro;
 # ros::ServiceClient serviceClient;
 # plutodrone::PlutoPilot service;
-
-userRC = [1500,1500,1500,1500,1000,1000,1000,1000]
-
-userRCAP = [1500,1500,1500,1500]
-
-droneRC = [1500,1500,1500,1500,1000,1000,1000,1000]
     
 MSP_HEADER = "244d3c"# "$M<"
 TCP_IP = '192.168.4.1'
@@ -36,7 +30,6 @@ MSP_EEPROM_WRITE = 250
 MSP_SET_POS= 216
 MSP_SET_COMMAND = 217
 
-
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((TCP_IP, TCP_PORT))
 
@@ -57,12 +50,27 @@ def createPacketMSP(msp, payload):
     bf += MSP_HEADER
 
     checksum = 0
-    pl_size = len(payload)
+    if (msp == MSP_SET_COMMAND):
+        pl_size = 1
+    else:
+        pl_size = len(payload) * 2 # No.of bytes
+
+    bf += '{:02x}'.format(pl_size & 0xFF)
     checksum ^= pl_size
+
+    bf += '{:02x}'.format(msp & 0xFF)
     checksum ^= msp
+
     for k in payload:
-        bf += '{:02x}'.format(k & 0xFF)
-        bf += '{:02x}'.format((k >> 8) & 0xFF)
+        if (msp == MSP_SET_COMMAND):
+            bf += '{:02x}'.format(k & 0xFF)
+            checksum ^= k & 0xFF
+
+        else:
+            bf += '{:02x}'.format(k & 0xFF)
+            checksum ^= k & 0xFF
+            bf += '{:02x}'.format((k >> 8) & 0xFF)
+            checksum ^= (k >> 8) & 0xFF
         # In Protocol.cpp, the above is done while sending the payload itself
         # 
     bf += '{:02x}'.format(checksum)
@@ -73,7 +81,7 @@ def sendRequestMSP_SET_RAW_RC(channels):
     '''
     channels: list of 8 RC channel values
     '''
-    sendRequestMSP(createPacketMSP(channels))
+    sendRequestMSP(createPacketMSP(MSP_SET_RAW_RC, channels))
 
 def sendRequestMSP_SET_COMMAND(commandType):
     sendRequestMSP(createPacketMSP(MSP_SET_COMMAND, [commandType]))
