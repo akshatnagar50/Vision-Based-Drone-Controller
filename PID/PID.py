@@ -1,3 +1,13 @@
+
+
+'''
+Things to do:
+(0) Collect data for a step input
+(1) Add derivative filtering term(moving average or any other?) and test
+(2) Add anti windup term for integral
+(3) Get roll/pitch feedback and add inner PID loop for roll&pitch 
+'''
+
 #!/usr/bin/env python3
 from cmath import inf
 import time
@@ -37,14 +47,17 @@ class PID:
         while(time.time()-t<5):
             pub.publish(obj)
         print('SLept')
+
     """
     Implements a PID controller.
     """
 
-    def __init__(self, K_roll: float, K_pitch: float, K_z: float,K_yaw: float, dt:float, tau:float) -> None:
+    def __init__(self, K_roll: float, K_pitch: float, K_z: float,K_yaw: float, dt:float, tau:float, alpha:float) -> None:
         
         self.dt       = dt
         self.tau      = tau
+        self.alpha    = alpha  # moving average smoothing factor
+
         self.rc_th = []
         self.rc_r  = []
         self.rc_p  = []
@@ -95,6 +108,7 @@ class PID:
         self.last_feedback_roll  = 0
         self.last_feedback_pitch = 0
         self.last_feedback_yaw   = 0
+        self.last_feedback_z_filtered     = 0
 
         # setting the initial PID outputs = 0
         self.last_output_z       = 0 
@@ -129,7 +143,7 @@ class PID:
     def update_z(self, feedback: float) -> float:
 
         error = -(0.3 - feedback)
-
+        feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z
         # P term
         self.Pterm_z  = 1700 + self.Kp_z * error
         # I term
@@ -137,6 +151,11 @@ class PID:
         # D term
         self.Dterm_z  = (-2 * self.Kd_z * (feedback - self.last_feedback_z)
                       + (2 * self.tau - self.dt) * self.Dterm_z / (2 * self.tau + self.dt))
+
+        # Dterm with moving average filter:
+        #self.Dterm_z = -2 * self.Kd_z * (feedback_z_filtered - self.last_feedback_z_filtered) 
+    
+
         
         # output = P + I + D
         output = self.Pterm_z  + self.Iterm_z + self.Dterm_z
@@ -150,6 +169,7 @@ class PID:
         self.last_output_z   = output
         self.last_error_z    = error
         self.last_feedback_z = feedback
+        self.last_feedback_z_filtered = feedback_z_filtered
 
         return output
 
@@ -327,12 +347,14 @@ if __name__ == '__main__':
         K_z     = [2000, 0, 0]
         K_roll  = [30, 0, 0]
         K_pitch = [30, 0, 0]
-        K_yaw   = [50, 0, 0]
+        K_yaw   = [30, 0, 0]
 
-        pid = PID(K_roll,K_pitch,K_z,K_yaw,dt=0.1,tau=0.01)
+        pid = PID(K_roll,K_pitch,K_z,K_yaw,dt=0.1,tau=0.01,alpha = 1.0)
         pid.main()
 
     except KeyboardInterrupt:
         print ("keyboarrrdd")
 
         pass
+
+
