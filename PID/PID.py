@@ -202,7 +202,7 @@ class PID:
         current_x = current_data.pose.position.x
         current_y = current_data.pose.position.y
         current_yaw = current_data.pose.orientation.z
-        altitude_PID_output = self.update(current_z)
+        altitude_PID_output = self.update_z(current_z)
         if current_z!=-1:
             obj=PlutoMsg()
             obj.rcThrottle=int(self.update_z(current_z))
