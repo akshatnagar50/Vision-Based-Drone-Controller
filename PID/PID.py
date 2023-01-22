@@ -246,13 +246,9 @@ class PID:
         current_x   = current_data.pose.position.x
         current_y   = current_data.pose.position.y
         current_yaw = current_data.pose.orientation.z
-<<<<<<< HEAD
+
         altitude_PID_output = self.update_z(current_z)
-=======
 
-        altitude_PID_output = self.update(current_z)
-
->>>>>>> 09bfda49a7878ea7571a9c437dce04231d5278e8
         if current_z!=-1:
             # rc outputs
             obj = PlutoMsg()
