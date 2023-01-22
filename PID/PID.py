@@ -245,13 +245,9 @@ class PID:
         current_x   = current_data.pose.position.x
         current_y   = current_data.pose.position.y
         current_yaw = current_data.pose.orientation.z
-<<<<<<< HEAD
-        altitude_PID_output = self.update_z(current_z)
-=======
-
+        
         altitude_PID_output = self.update_z(current_z)
 
->>>>>>> 866f273fd6a27d0ae37faffecd5d74f6dcdbcaac
         if current_z!=-1:
             # rc outputs
             self.df = pd.DataFrame()
