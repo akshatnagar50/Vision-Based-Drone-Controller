@@ -374,7 +374,7 @@ if __name__ == '__main__':
         K_pitch = [30, 0, 0]
         K_yaw   = [30, 0, 0]
 
-        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.01,alpha = 0.5)
+        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5)
         pid.main()
 
     except KeyboardInterrupt:
