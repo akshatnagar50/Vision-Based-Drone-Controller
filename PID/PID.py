@@ -3,10 +3,19 @@
 '''
 Things to do:
 (0) Collect data for a step input
-(1) Add derivative filtering term(moving average or any other?) and test
+(1) Add derivative filtering term(exponential smoothing or any other?) and test
 (2) Add anti windup term for integral
 (3) Get roll/pitch feedback and add inner PID loop for roll&pitch 
 '''
+
+'''Questions:
+1. Have u tried running full rcPitch/roll? not good to run on full value? Need a low upper cap? (1400-1600)?
+2. Need to enable D&I terms only after some time after the start?
+3. Exact mean is 1500 for r,p,y?
+4. Need d(e)/dt itself instead of d(feedback)/dt?
+5. 
+'''
+
 
 #!/usr/bin/env python3
 from cmath import inf
@@ -52,11 +61,11 @@ class PID:
     Implements a PID controller.
     """
 
-    def __init__(self, K_roll: float, K_pitch: float, K_z: float,K_yaw: float, dt:float, tau:float, alpha:float) -> None:
+    def __init__(self,K_z: float, K_roll: float, K_pitch: float, K_yaw: float, dt:float, tau:float, alpha:float) -> None:
         
         self.dt       = dt
         self.tau      = tau
-        self.alpha    = alpha  # moving average smoothing factor
+        self.alpha    = alpha  # exponential smoothing factor
 
         self.rc_th = []
         self.rc_r  = []
@@ -109,6 +118,9 @@ class PID:
         self.last_feedback_pitch = 0
         self.last_feedback_yaw   = 0
         self.last_feedback_z_filtered     = 0
+        self.last_feedback_roll_filtered  = 0
+        self.last_feedback_pitch_filtered = 0
+        self.last_feedback_yaw_filtered   = 0
 
         # setting the initial PID outputs = 0
         self.last_output_z       = 0 
@@ -128,7 +140,7 @@ class PID:
         self.pub = rospy.Publisher("/drone_command",PlutoMsg,queue_size=10)
         self.arm(self.pub)
         rospy.Subscriber("Detection",PoseStamped,self.controller_out)
-        rospy.Subscriber("Kp",Float32,self.setKp)
+        rospy.Subscriber("Kp_z",Float32,self.setKp_z)
         rospy.Subscriber("Kp_roll",Float32,self.setKp_roll)
         rospy.Subscriber("Kp_pitch",Float32,self.setKp_pitch)
 
@@ -143,7 +155,7 @@ class PID:
     def update_z(self, feedback: float) -> float:
 
         error = -(0.3 - feedback)
-        feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z
+        feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z_filtered
         # P term
         self.Pterm_z  = 1700 + self.Kp_z * error
         # I term
@@ -152,10 +164,8 @@ class PID:
         self.Dterm_z  = (-2 * self.Kd_z * (feedback - self.last_feedback_z)
                       + (2 * self.tau - self.dt) * self.Dterm_z / (2 * self.tau + self.dt))
 
-        # Dterm with moving average filter:
+        # Dterm with exponential smoothing:
         #self.Dterm_z = -2 * self.Kd_z * (feedback_z_filtered - self.last_feedback_z_filtered) 
-    
-
         
         # output = P + I + D
         output = self.Pterm_z  + self.Iterm_z + self.Dterm_z
@@ -177,7 +187,8 @@ class PID:
     def update_roll(self, feedback: float) -> float:
 
         error = (0 - feedback)
-        
+        feedback_roll_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_roll_filtered
+
         # P term
         self.Pterm_roll  = 1500 + self.Kp_roll * error 
         # I term
@@ -185,6 +196,9 @@ class PID:
         # D term
         self.Dterm_roll  = (-2 * self.Kd_roll * (feedback - self.last_feedback_roll)
                          + (2 * self.tau - self.dt) * self.Dterm_roll / (2 * self.tau + self.dt))
+
+        # Dterm with exponential smoothing:
+        #self.Dterm_roll = -2 * self.Kd_roll * (feedback_roll_filtered - self.last_feedback_roll_filtered)
         
         # output = P + I + D
         output = self.Pterm_roll + self.Iterm_roll + self.Dterm_roll
@@ -198,6 +212,7 @@ class PID:
         self.last_output_roll   = output
         self.last_error_roll    = error
         self.last_feedback_roll = feedback
+        self.last_feedback_roll_filtered = feedback_roll_filtered
 
         return output
         
@@ -205,7 +220,7 @@ class PID:
     def update_pitch(self, feedback: float) -> float: 
 
         error = (0 - feedback)
-
+        feedback_pitch_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_pitch_filtered
         # P term
         self.Pterm_pitch  = 1500 + self.Kp_pitch * error
         # I term
@@ -213,6 +228,9 @@ class PID:
         # D term
         self.Dterm_pitch  = (-2 * self.Kd_pitch * (feedback - self.last_feedback_pitch)
                           + (2 * self.tau - self.dt) * self.Dterm_pitch / (2 * self.tau + self.dt))
+        
+        # Dterm with exponential smoothing:
+        #self.Dterm_pitch = -2 * self.Kd_pitch * (feedback_pitch_filtered - self.last_feedback_pitch_filtered)
         
         # output = P + I + D
         output = self.Pterm_pitch + self.Iterm_pitch + self.Dterm_pitch
@@ -226,6 +244,8 @@ class PID:
         self.last_output_pitch   = output
         self.last_error_pitch    = error
         self.last_feedback_pitch = feedback
+        self.last_feedback_pitch_filtered = feedback_pitch_filtered
+
 
         return output
 
@@ -234,7 +254,8 @@ class PID:
         # if feedback>180:Dt
         #     feedback = feedback -360
         error = (180 - feedback)
-        
+        feedback_yaw_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_yaw_filtered
+       
         # P term
         self.Pterm_yaw  = 1500 + self.Kp_yaw * error
         # I term
@@ -242,7 +263,10 @@ class PID:
         # D term
         self.Dterm_yaw  = (-2 * self.Kd_yaw * (feedback - self.last_feedback_yaw)
                         + (2 * self.tau - self.dt) * self.Dterm_yaw / (2 * self.tau + self.dt))
-        
+
+        # Dterm with exponential smoothing:
+        #self.Dterm_yaw = -2 * self.Kd_yaw * (feedback_yaw_filtered - self.last_feedback_yaw_filtered)
+            
         # output = P + I + D
         output = self.Pterm_yaw + self.Iterm_yaw + self.Dterm_yaw
         
@@ -255,6 +279,7 @@ class PID:
         self.last_output_yaw   = output
         self.last_error_yaw    = error
         self.last_feedback_yaw = feedback
+        self.last_feedback_yaw_filtered = feedback_yaw_filtered
 
         return output
         
@@ -325,8 +350,8 @@ class PID:
             self.pub.publish(obj)
             print("rcThrottle = 1800")
 
-    def setKp(self,msg:Float32):
-        self.Kp = msg.data
+    def setKp_z(self,msg:Float32):
+        self.Kp_z = msg.data
         
     def setKp_roll(self,msg:Float32):
         self.Kp_roll  = msg.data
@@ -349,12 +374,14 @@ if __name__ == '__main__':
         K_pitch = [30, 0, 0]
         K_yaw   = [30, 0, 0]
 
-        pid = PID(K_roll,K_pitch,K_z,K_yaw,dt=0.1,tau=0.01,alpha = 1.0)
+        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.01,alpha = 0.5)
         pid.main()
 
     except KeyboardInterrupt:
         print ("keyboarrrdd")
 
         pass
+
+
 
 
