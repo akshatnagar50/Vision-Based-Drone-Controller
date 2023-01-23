@@ -34,7 +34,7 @@ class USER_RC():
         self.rcRoll=1500
         self.rcYaw=1500
         self.rcPitch =1500
-        self.rcThrottle =1500
+        self.rcThrottle = 1500
         self.rcAUX4 =1500
 		# self.isAutoPilotOn = 0
 
@@ -121,14 +121,22 @@ def writeFunction():
 
 
 def on_press(key):
-    print('{0} pressed'.format(
-        key))
+    print('{0} pressed'.format(key))
+
     if key == Key.space: #ARM
         if droneRC[7] == 1500: # if armed
             userRC.disarm()
-            print('here')
         else:
             userRC.arm()
+
+    if key == Key.up:
+        userRC.forward()
+    if key == Key.down:
+        userRC.backward()
+    if key == Key.left:
+        userRC.left()
+    if key == Key.right:
+        userRC.right()
 
     if 'char' in dir(key):
         if key.char == 'q':
@@ -147,19 +155,15 @@ def on_press(key):
         if key.char == 'd':
             userRC.right_yaw()
 
-        if key.char == Key.up:
-            userRC.forward()
-        if key.char == Key.down:
-            userRC.backward()
-        if key.char == Key.left:
-            userRC.left()
-        if key.char == Key.right:
-            userRC.right()
     
 def on_release(key):
-    print('{0} release'.format(
-        key))
-    userRC.reset()
+    print('{0} release'.format(key))
+    
+    if key in [Key.up, Key.down, Key.left, Key.right]:
+        userRC.reset()
+    elif 'char' in dir(key):
+        if  key.char in ['w', 'a', 's', 'd']:
+            userRC.reset()
 
 def key_handling():
     with Listener(
@@ -167,8 +171,8 @@ def key_handling():
         listener.join()
 
 if __name__ == '__main__':
-    print("Connected to ", client)
-    
+    print("Connecting to ", client)
+
     userRC = USER_RC()
 
     thread = Thread(target=writeFunction)
