@@ -130,7 +130,7 @@ class PID:
 
         self.last_time = time.time()   
 
-        self.set_limits(1000, 2000, -inf, inf)
+        self.set_limits(1000, 1875, -inf, inf)
         
         self.plotlist_throttle = []
         self.plotlist_height   = []
@@ -154,7 +154,7 @@ class PID:
 
     def update_z(self, feedback: float) -> float:
 
-        error = -(0.3 - feedback)
+        error = -(0.7 - feedback)
         feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z_filtered
         # P term
         self.Pterm_z  = 1700 + self.Kp_z * error
@@ -363,15 +363,15 @@ class PID:
         self.Kp_yaw   = msg.data
 
     def main(self):
-        rate=rospy.Rate(10)
+        rate=rospy.Rate(50)
         while not rospy.is_shutdown():
             rate.sleep()
     
 if __name__ == '__main__':
     try:
-        K_z     = [2000, 0, 0]
-        K_roll  = [30, 0, 0]
-        K_pitch = [30, 0, 0]
+        K_z     = [750, 0, 0]
+        K_roll  = [50, 0, 0]
+        K_pitch = [50, 0, 0]
         K_yaw   = [30, 0, 0]
 
         pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5)
