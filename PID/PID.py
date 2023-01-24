@@ -1,5 +1,3 @@
-
-
 '''
 Things to do:
 (0) Collect data for a step input
@@ -27,7 +25,7 @@ from std_msgs.msg import Float32
 from matplotlib import pyplot as plt
 import pickle
 import pandas as pd
-
+cam_orientation=0
 rc_th = []
 rc_r  = []
 rc_p  = []
@@ -61,12 +59,11 @@ class PID:
     Implements a PID controller.
     """
 
-    def __init__(self,K_z: float, K_roll: float, K_pitch: float, K_yaw: float, dt:float, tau:float, alpha:float) -> None:
+    def __init__(self,K_z: float, K_roll: float, K_pitch: float, K_yaw: float, dt:float, tau:float, alpha:float,cam_orientation:float) -> None:
         
         self.dt       = dt
         self.tau      = tau
         self.alpha    = alpha  # exponential smoothing factor
-
         self.rc_th = []
         self.rc_r  = []
         self.rc_p  = []
@@ -74,6 +71,7 @@ class PID:
         self.sen_r = []
         self.sen_p = []
         self.sen_y = []
+        self.cam=cam_orientation
         self.cam_x = []
         self.cam_y = []
         self.cam_z = []
@@ -153,7 +151,7 @@ class PID:
 
 
     def update_z(self, feedback: float) -> float:
-
+        
         error = -(0.7 - feedback)
         feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z_filtered
         # P term
@@ -295,12 +293,14 @@ class PID:
 
         if current_z!=-1:
             # rc outputs
+
             self.df = pd.DataFrame()
             obj = PlutoMsg()
             obj.rcThrottle = int(self.update_z(current_z))
-            obj.rcPitch    = int(self.update_pitch(current_x))
-            obj.rcRoll     = int(self.update_roll(current_y))
-            obj.rcYaw      = int(self.update_yaw(current_yaw))
+            obj.rcPitch    = int(self.update_pitch(-(current_x*math.sin(-cam_orientation+current_yaw)+current_y*math.cos(-cam_orientation+current_yaw))))
+            obj.rcRoll     = int(self.update_roll(current_x*math.cos(-cam_orientation+current_yaw)-current_y*math.sin(-cam_orientation+current_yaw)))
+            #obj.rcYaw      = int(self.update_yaw(current_yaw))
+            obj.rcYaw      = 1500
             obj.rcAUX4     = 1500
             obj.rcAUX3     = 1500
             obj.rcAUX2     = 1500
@@ -374,7 +374,7 @@ if __name__ == '__main__':
         K_pitch = [50, 0, 0]
         K_yaw   = [30, 0, 0]
 
-        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5)
+        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation)
         pid.main()
 
     except KeyboardInterrupt:
