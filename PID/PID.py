@@ -67,6 +67,7 @@ class PID:
         self.alpha    = alpha  # exponential smoothing factor
         self.memory_thr    = 0
         self.memory_roll   = 0
+        self.current_consecutive_frames=0
         self.memory_pitch  = 0
         self.memory_yaw    = 0
 
@@ -309,6 +310,7 @@ class PID:
 
         if current_z>0:
             # rc outputs
+            self.current_consecutive_frames=0
             altitude_PID_output = self.update_z(current_z,1100,1900)
             self.df = pd.DataFrame()
             obj = PlutoMsg()
@@ -367,10 +369,12 @@ class PID:
             self.df['cam_z'] = self.cam_z
             self.df['time'] = time.time()
             self.df.to_csv('Data.csv')
-
-        else:  # When drone is not detected by camera
+        else: 
+            self.current_consecutive_frames+=1
+             # When drone is not detected by camera
+        if current_z<0 and self.current_consecutive_frames<=10:
             obj=PlutoMsg()
-            obj.rcThrottle = int(self.update_z(self.memory_thr))
+            obj.rcThrottle = self.memory_thr
             obj.rcPitch    = self.memory_pitch
             obj.rcRoll     = self.memory_roll
             obj.rcYaw      = 1500
@@ -383,6 +387,21 @@ class PID:
             print("memory_Roll = ",self.memory_roll)
             print("memory_Pitch",self.memory_pitch)
             print(" ")
+        if current_z<0 and self.current_consecutive_frames>10:
+            obj=PlutoMsg()
+            obj.rcThrottle = 1000
+            obj.rcPitch    = 1500
+            obj.rcRoll     = 1500
+            obj.rcYaw      = 1500
+            obj.rcAUX4     = 1500
+            obj.rcAUX3     = 1500
+            obj.rcAUX2     = 1500
+            obj.rcAUX1     = 1500
+            self.pub.publish(obj)
+            print("memory_thr = ",1000)
+            print("memory_Roll = ",1500)
+            print("memory_Pitch",1500)
+            print(" ")    
 
     def setKp_z(self,msg:Float32):
         self.Kp_z = msg.data
