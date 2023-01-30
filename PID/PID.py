@@ -134,7 +134,7 @@ class PID:
 
         self.last_time = time.time()   
 
-        self.set_limits(1000, 2000, -inf, inf)
+#         self.set_limits(1000, 2000)
         
         self.plotlist_throttle = []
         self.plotlist_height   = []
@@ -149,21 +149,29 @@ class PID:
         rospy.Subscriber("Kp_pitch",Float32,self.setKp_pitch)
 
    
-    def set_limits(self, min: float, max: float, min_int: float, max_int: float) -> None:
-        self.max = max
-        # self.max_int = max_int
-        self.min = min
-        # self.min_int = min_int
+#     def set_limits(self, min: float, max: float) -> None:
+#         self.max = max
+#         self.min = min
 
 
-    def update_z(self, feedback: float) -> float:
+    def update_z(self, feedback: float,min,max) -> float:
+        
+        # output = P + I + D
+        output = self.Pterm_z  + self.Iterm_z + self.Dterm_z
         
         error = -(0.8 - feedback)
+        
         feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z_filtered
+        
         # P term
-        self.Pterm_z  = 1500 + self.Kp_z * error
-        # I term
-        self.Iterm_z += (error + self.last_error_z) * 0.5 * self.Ki_z * self.dt
+        self.Pterm_z  = 1600 + self.Kp_z * error
+        
+        # I term  (With anti-windup)
+        if ((output>max and error>0) or (output<min and error<0)):
+            self.Iterm_z = self.Iterm_z
+        else:
+            self.Iterm_z += (error + self.last_error_z) * 0.5 * self.Ki_z * self.dt
+
         # D term
         self.Dterm_z  = (-2 * self.Kd_z * (feedback - self.last_feedback_z)
                       + (2 * self.tau - self.dt) * self.Dterm_z / (2 * self.tau + self.dt))
@@ -171,14 +179,13 @@ class PID:
         # Dterm with exponential smoothing:
         #self.Dterm_z = -2 * self.Kd_z * (feedback_z_filtered - self.last_feedback_z_filtered) 
         
-        # output = P + I + D
-        output = self.Pterm_z  + self.Iterm_z + self.Dterm_z
+        
         
         # output limits
-        if output < self.min:
-            return self.min
-        if output > self.max:
-            return self.max
+        if output < min:
+            return min
+        if output > max:
+            return max
 
         self.last_output_z   = output
         self.last_error_z    = error
@@ -188,7 +195,7 @@ class PID:
         return output
 
 
-    def update_roll(self, feedback: float) -> float:
+    def update_roll(self, feedback: float,min,max) -> float:
 
         error = (0 - feedback)
         feedback_roll_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_roll_filtered
@@ -208,10 +215,10 @@ class PID:
         output = self.Pterm_roll + self.Iterm_roll + self.Dterm_roll
         
         # output limits
-        if output < self.min:
-            return self.min
-        if output > self.max:
-            return self.max
+        if output < min:
+            return min
+        if output > max:
+            return max
 
         self.last_output_roll   = output
         self.last_error_roll    = error
@@ -221,12 +228,12 @@ class PID:
         return output
         
         
-    def update_pitch(self, feedback: float) -> float: 
+    def update_pitch(self, feedback: float,min,max) -> float: 
 
         error = (0 - feedback)
         feedback_pitch_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_pitch_filtered
         # P term
-        self.Pterm_pitch  = 1700 + self.Kp_pitch * error
+        self.Pterm_pitch  = 1500 + self.Kp_pitch * error
         # I term
         self.Iterm_pitch += (error + self.last_error_pitch) * 0.5 * self.Ki_pitch * self.dt
         # D term
@@ -240,10 +247,10 @@ class PID:
         output = self.Pterm_pitch + self.Iterm_pitch + self.Dterm_pitch
         
         # output limits
-        if output < self.min:
-            return self.min
-        if output > self.max:
-            return self.max
+        if output < min:
+            return min
+        if output > max:
+            return max
 
         self.last_output_pitch   = output
         self.last_error_pitch    = error
@@ -254,7 +261,7 @@ class PID:
         return output
 
 
-    def update_yaw(self, feedback: float) -> float:
+    def update_yaw(self, feedback: float,min,max) -> float:
         # if feedback>180:Dt
         #     feedback = feedback -360
         error = (180 - feedback)
@@ -275,10 +282,10 @@ class PID:
         output = self.Pterm_yaw + self.Iterm_yaw + self.Dterm_yaw
         
         # output limits
-        if output < self.min:
-            return self.min
-        if output > self.max:
-            return self.max
+        if output < min:
+            return min
+        if output > max:
+            return max
 
         self.last_output_yaw   = output
         self.last_error_yaw    = error
@@ -302,16 +309,16 @@ class PID:
 
         if current_z>0:
             # rc outputs
-            altitude_PID_output = self.update_z(current_z)
+            altitude_PID_output = self.update_z(current_z,1100,1900)
             self.df = pd.DataFrame()
             obj = PlutoMsg()
-            obj.rcThrottle = int(self.update_z(current_z))
+            obj.rcThrottle = int(self.update_z(current_z,1100,1900))
             self.memory_thr = obj.rcThrottle
     
-            obj.rcPitch    = int(self.update_pitch((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw)))))
+            obj.rcPitch    = int(self.update_pitch((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))),1450,1550))
             self.memory_pitch = obj.rcPitch
 
-            obj.rcRoll     = int(self.update_roll(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw))))
+            obj.rcRoll     = int(self.update_roll(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)),1450,1550))
             self.memory_roll = obj.rcRoll
 
             #obj.rcYaw      = int(self.update_yaw(current_yaw))
