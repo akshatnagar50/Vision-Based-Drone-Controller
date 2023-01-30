@@ -18,6 +18,7 @@ Things to do:
 #!/usr/bin/env python3
 from cmath import inf
 import time
+import math
 import rospy
 from plutodrone.msg import PlutoMsg
 from geometry_msgs.msg import PoseStamped
@@ -64,6 +65,11 @@ class PID:
         self.dt       = dt
         self.tau      = tau
         self.alpha    = alpha  # exponential smoothing factor
+        self.memory_thr    = 0
+        self.memory_roll   = 0
+        self.memory_pitch  = 0
+        self.memory_yaw    = 0
+
         self.rc_th = []
         self.rc_r  = []
         self.rc_p  = []
@@ -128,7 +134,7 @@ class PID:
 
         self.last_time = time.time()   
 
-        self.set_limits(1000, 1875, -inf, inf)
+        self.set_limits(1000, 2000, -inf, inf)
         
         self.plotlist_throttle = []
         self.plotlist_height   = []
@@ -152,10 +158,10 @@ class PID:
 
     def update_z(self, feedback: float) -> float:
         
-        error = -(0.7 - feedback)
+        error = -(0.8 - feedback)
         feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z_filtered
         # P term
-        self.Pterm_z  = 1700 + self.Kp_z * error
+        self.Pterm_z  = 1500 + self.Kp_z * error
         # I term
         self.Iterm_z += (error + self.last_error_z) * 0.5 * self.Ki_z * self.dt
         # D term
@@ -220,7 +226,7 @@ class PID:
         error = (0 - feedback)
         feedback_pitch_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_pitch_filtered
         # P term
-        self.Pterm_pitch  = 1500 + self.Kp_pitch * error
+        self.Pterm_pitch  = 1700 + self.Kp_pitch * error
         # I term
         self.Iterm_pitch += (error + self.last_error_pitch) * 0.5 * self.Ki_pitch * self.dt
         # D term
@@ -285,20 +291,29 @@ class PID:
     def controller_out(self,current_data:PoseStamped):
         # getting feedback (current data)
         current_z   = current_data.pose.position.z
-        current_x   = current_data.pose.position.x
-        current_y   = current_data.pose.position.y
+        current_x   = current_data.pose.position.x+0.26
+        current_y   = current_data.pose.position.y+0.12 
         current_yaw = current_data.pose.orientation.z
-        
-        altitude_PID_output = self.update_z(current_z)
 
-        if current_z!=-1:
+    
+
+
+        #altitude_PID_output = self.update_z(current_z)
+
+        if current_z>0:
             # rc outputs
-
+            altitude_PID_output = self.update_z(current_z)
             self.df = pd.DataFrame()
             obj = PlutoMsg()
             obj.rcThrottle = int(self.update_z(current_z))
-            obj.rcPitch    = int(self.update_pitch(-(current_x*math.sin(-cam_orientation+current_yaw)+current_y*math.cos(-cam_orientation+current_yaw))))
-            obj.rcRoll     = int(self.update_roll(current_x*math.cos(-cam_orientation+current_yaw)-current_y*math.sin(-cam_orientation+current_yaw)))
+            self.memory_thr = obj.rcThrottle
+    
+            obj.rcPitch    = int(self.update_pitch((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw)))))
+            self.memory_pitch = obj.rcPitch
+
+            obj.rcRoll     = int(self.update_roll(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw))))
+            self.memory_roll = obj.rcRoll
+
             #obj.rcYaw      = int(self.update_yaw(current_yaw))
             obj.rcYaw      = 1500
             obj.rcAUX4     = 1500
@@ -321,10 +336,18 @@ class PID:
             self.plotlist_throttle.append(int(altitude_PID_output-1000)/10)
             self.plotlist_height.append(int(current_z*100))
             # plt.plot(self.plotlist_throttle)self.plotlist_height)
-            k=plt.plot([self.plotlist_throttle,self.plotlist_height])
-            file=open('Graph.pickle','wb')
-            pickle.dump(k,file)
+            # k=plt.plot([self.plotlist_throttle,self.plotlist_height])
+            # file=open('Graph.pickle','wb')
+            # pickle.dump(k,file)
+
+            print(time.time())
             print("rcThrottle = ",altitude_PID_output)
+            print("rcRoll = ",obj.rcRoll)
+            print("rcPitch",obj.rcPitch)
+            print(" ")
+
+
+
             self.df['rc_th'] = self.rc_th
             self.df['rc_r '] = self.rc_r 
             self.df['rc_p '] = self.rc_p 
@@ -335,20 +358,24 @@ class PID:
             self.df['cam_x'] = self.cam_x
             self.df['cam_y'] = self.cam_y
             self.df['cam_z'] = self.cam_z
+            self.df['time'] = time.time()
             self.df.to_csv('Data.csv')
 
         else:  # When drone is not detected by camera
             obj=PlutoMsg()
-            obj.rcPitch    = 1500
-            obj.rcRoll     = 1500
+            obj.rcThrottle = int(self.update_z(self.memory_thr))
+            obj.rcPitch    = self.memory_pitch
+            obj.rcRoll     = self.memory_roll
             obj.rcYaw      = 1500
             obj.rcAUX4     = 1500
             obj.rcAUX3     = 1500
             obj.rcAUX2     = 1500
             obj.rcAUX1     = 1500
-            obj.rcThrottle = 1800 
             self.pub.publish(obj)
-            print("rcThrottle = 1800")
+            print("memory_thr = ",self.memory_thr)
+            print("memory_Roll = ",self.memory_roll)
+            print("memory_Pitch",self.memory_pitch)
+            print(" ")
 
     def setKp_z(self,msg:Float32):
         self.Kp_z = msg.data
@@ -369,19 +396,14 @@ class PID:
     
 if __name__ == '__main__':
     try:
-        K_z     = [750, 0, 0]
-        K_roll  = [50, 0, 0]
-        K_pitch = [50, 0, 0]
-        K_yaw   = [30, 0, 0]
+        K_z     = [1000, 0, 50]
+        K_roll  = [-30 , 0, 0]
+        K_pitch = [-30, 0, 0]
+        K_yaw   = [0, 0, 0]
 
-        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation)
+        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation=180.0)
         pid.main()
 
     except KeyboardInterrupt:
         print ("keyboarrrdd")
-
         pass
-
-
-
-
