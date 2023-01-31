@@ -72,8 +72,12 @@ def rotationMatrixToEulerAngles(R):
 
 #--- Get the camera calibration path
 calib_path  = ""
-camera_matrix   = np.loadtxt(calib_path+'camera_matrix.txt', delimiter=',')
-camera_distortion   = np.loadtxt(calib_path+'camera_distortion.txt', delimiter=',')
+camera_matrix   = np.array([[708.03220678,   0.        , 314.11308886],
+       [  0.        , 706.23511415, 246.16059333],
+       [  0.        ,   0.        ,   1.        ]])
+camera_distortion   =  np.array(
+[[-1.07268339e-01,  2.65555312e+00,  1.06981415e-02,
+         1.89814985e-03, -1.14050523e+01]])
 
 #--- 180 deg rotation matrix around the x axis
 R_flip  = np.zeros((3,3), dtype=np.float32)
@@ -105,7 +109,7 @@ while True:
 
     #-- Find all the aruco markers in the image
     corners, ids, rejected = aruco.detectMarkers(image=gray, dictionary=aruco_dict, parameters=parameters)
-    
+    cv2.imshow('Orginal Feed',frame)
     if ids is not None and ids[0] == id_to_find:
         
         #-- ret = [rvec, tvec, ?]
@@ -122,7 +126,7 @@ while True:
         cv2.drawFrameAxes(frame, camera_matrix, camera_distortion, rvec, tvec, 10)
 
         #-- Print the tag position in camera frame
-        str_position = "MARKER Position x=%4.0f  y=%4.0f  z=%4.0f"%(tvec[0], tvec[1], tvec[2])
+        str_position = "MARKER Position x=%.0f  y=%.0f  z=%.0f"%(tvec[0], tvec[1], tvec[2])
         cv2.putText(frame, str_position, (0, 100), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
         #-- Obtain the rotation matrix tag->camera
@@ -149,12 +153,12 @@ while True:
         str_attitude = "CAMERA Attitude r=%4.0f  p=%4.0f  y=%4.0f"%(math.degrees(roll_camera),math.degrees(pitch_camera),
                             math.degrees(yaw_camera))
         cv2.putText(frame, str_attitude, (0, 250), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
-
+	
+        
 
     
 
-
+    cv2.circle(frame, (int(280/2), int(620/2)), 10, (0, 0, 255), 2, cv2.LINE_AA)
     #--- Display the frame
     cv2.imshow('frame', frame)
 
@@ -164,6 +168,7 @@ while True:
         cap.release()
         cv2.destroyAllWindows()
         break
+
 
 
 
