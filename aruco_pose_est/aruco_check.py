@@ -5,7 +5,7 @@ import cv2
 import cv2.aruco as aruco
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2)
 
 if True:
     mtx = np.array([[698.30269162,   0,         482.23369024],
@@ -20,6 +20,7 @@ if True:
 
 while True:
     ret, frame = cap.read()
+    print(frame.shape)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     params = aruco.DetectorParameters_create()
     corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters = params)
@@ -49,11 +50,12 @@ while True:
 
 
 
-    print("Roll:" + str(r))
-    print("Pitch:" + str(p))
-    print("Yaw:" + str(y))
-    print("Height:" + str(marker_height))
-    print("")
+    # print("Roll:" + str(r))
+    # print("Pitch:" + str(p))
+    # print("Yaw:" + str(y))
+    # print("Height:" + str(marker_height))
+    # print("")
+    # print(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
 
     cv2.imshow('Frame', frame)
