@@ -110,12 +110,16 @@ class PID:
         # self.target = target
 
         # setting the initial Derivative&Integral term as 0
+        self.Pterm_z             = 0
         self.Dterm_z             = 0   
         self.Iterm_z             = 0
+        self.Pterm_roll          = 0
         self.Dterm_roll          = 0
         self.Iterm_roll          = 0
+        self.Pterm_pitch         = 0
         self.Dterm_pitch         = 0
         self.Iterm_pitch         = 0
+        self.Pterm_yaw           = 0
         self.Dterm_yaw           = 0
         self.Iterm_yaw           = 0
 
@@ -170,7 +174,7 @@ class PID:
 
         error = -(0.8 - feedback)
 
-        feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z_filtered
+        # feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z_filtered
 
         # P term
         self.Pterm_z  = 1600 + self.Kp_z * error
@@ -196,9 +200,9 @@ class PID:
         if output > max:
             return max
 
-        self.last_output_z   = output
-        self.last_error_z    = error
-        self.last_feedback_z = feedback
+        self.last_output_z            = output
+        self.last_error_z             = error
+        self.last_feedback_z          = feedback
         self.last_feedback_z_filtered = feedback_z_filtered
 
         return output
@@ -229,9 +233,9 @@ class PID:
         if output > max:
             return max
 
-        self.last_output_roll   = output
-        self.last_error_roll    = error
-        self.last_feedback_roll = feedback
+        self.last_output_roll            = output
+        self.last_error_roll             = error
+        self.last_feedback_roll          = feedback
         self.last_feedback_roll_filtered = feedback_roll_filtered
 
         return output
@@ -261,9 +265,9 @@ class PID:
         if output > max:
             return max
 
-        self.last_output_pitch   = output
-        self.last_error_pitch    = error
-        self.last_feedback_pitch = feedback
+        self.last_output_pitch            = output
+        self.last_error_pitch             = error
+        self.last_feedback_pitch          = feedback
         self.last_feedback_pitch_filtered = feedback_pitch_filtered
 
 
@@ -296,9 +300,9 @@ class PID:
         if output > max:
             return max
 
-        self.last_output_yaw   = output
-        self.last_error_yaw    = error
-        self.last_feedback_yaw = feedback
+        self.last_output_yaw            = output
+        self.last_error_yaw             = error
+        self.last_feedback_yaw          = feedback
         self.last_feedback_yaw_filtered = feedback_yaw_filtered
 
         return output
@@ -360,33 +364,33 @@ class PID:
             self.pub.publish(obj)
             self.plotlist_throttle.append(int(altitude_PID_output-1000)/10)
             self.plotlist_height.append(int(current_z*100))
-            self.df['rc_th'] = self.rc_th
-            self.df['rc_r '] = self.rc_r 
-            self.df['rc_p '] = self.rc_p 
-            self.df['rc_y '] = self.rc_y 
-            self.df['sen_r'] = self.sen_r
-            self.df['sen_p'] = self.sen_p
-            self.df['sen_y'] = self.sen_y
-            self.df['cam_x'] = self.cam_x
-            self.df['cam_y'] = self.cam_y
-            self.df['cam_z'] = self.cam_z
-            self.df['fake_x']= self.fake_y
-            self.df['fake_y']= self.fake_x
-            self.df['time'] = time.time()
+            self.df['rc_th']     =      self.rc_th
+            self.df['rc_r ']     =      self.rc_r 
+            self.df['rc_p ']     =      self.rc_p 
+            self.df['rc_y ']     =      self.rc_y 
+            self.df['sen_r']     =      self.sen_r
+            self.df['sen_p']     =      self.sen_p
+            self.df['sen_y']     =      self.sen_y
+            self.df['cam_x']     =      self.cam_x
+            self.df['cam_y']     =      self.cam_y
+            self.df['cam_z']     =      self.cam_z
+            self.df['fake_x']    =      self.fake_y
+            self.df['fake_y']    =      self.fake_x
+            self.df['time']      =      time.time()
             self.df.to_csv('Data.csv')
         else: 
             self.current_consecutive_frames+=1
              # When drone is not detected by camera
         if current_z<0 and self.current_consecutive_frames<=40:
             obj=PlutoMsg()
-            obj.rcThrottle = self.memory_thr
-            obj.rcPitch    = self.memory_pitch
-            obj.rcRoll     = self.memory_roll
-            obj.rcYaw      = 1500
-            obj.rcAUX4     = 1500
-            obj.rcAUX3     = 1500
-            obj.rcAUX2     = 1500
-            obj.rcAUX1     = 1500
+            obj.rcThrottle       =      self.memory_thr
+            obj.rcPitch          =      self.memory_pitch
+            obj.rcRoll           =      self.memory_roll
+            obj.rcYaw            =      1500
+            obj.rcAUX4           =      1500
+            obj.rcAUX3           =      1500
+            obj.rcAUX2           =      1500
+            obj.rcAUX1           =      1500
             self.pub.publish(obj)
             print("memory_thr = ",self.memory_thr)
             print("memory_Roll = ",self.memory_roll)
@@ -408,18 +412,18 @@ class PID:
             self.pub.publish(obj)
             self.plotlist_throttle.append(int(altitude_PID_output-1000)/10)
             self.plotlist_height.append(int(current_z*100))
-            self.df['rc_th'] = self.rc_th
-            self.df['rc_r '] = self.rc_r 
-            self.df['rc_p '] = self.rc_p 
-            self.df['rc_y '] = self.rc_y 
-            self.df['sen_r'] = self.sen_r
-            self.df['sen_p'] = self.sen_p
-            self.df['sen_y'] = self.sen_y
-            self.df['cam_x'] = self.cam_x
-            self.df['cam_y'] = self.cam_y
-            self.df['cam_z'] = self.cam_z
-            self.df['fake_x']= self.fake_y
-            self.df['fake_y']= self.fake_x
+            self.df['rc_th']         =    self.rc_th
+            self.df['rc_r ']         =    self.rc_r 
+            self.df['rc_p ']         =    self.rc_p 
+            self.df['rc_y ']         =    self.rc_y 
+            self.df['sen_r']         =    self.sen_r
+            self.df['sen_p']         =    self.sen_p
+            self.df['sen_y']         =    self.sen_y
+            self.df['cam_x']         =    self.cam_x
+            self.df['cam_y']         =    self.cam_y
+            self.df['cam_z']         =    self.cam_z
+            self.df['fake_x']        =    self.fake_y
+            self.df['fake_y']        =    self.fake_x
             self.df['time'] = time.time()
             self.df.to_csv('Data.csv')
         if current_z<0 and self.current_consecutive_frames>40 and self.current_consecutive_frames<200:
