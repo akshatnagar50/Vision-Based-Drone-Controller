@@ -60,7 +60,7 @@ class PID:
     Implements a PID controller.
     """
 
-    def __init__(self,K_z: float, K_roll: float, K_pitch: float, K_yaw: float, dt:float, tau:float, alpha:float,cam_orientation:float) -> None:
+    def __init__(self,K_z: float, K_roll: float, K_pitch: float, K_yaw: float, dt:float, tau:float, alpha:float,cam_orientation:float,XT:float,YT:float,ZT:float) -> None:
 
         self.dt       = dt
         self.tau      = tau
@@ -70,6 +70,8 @@ class PID:
         self.current_consecutive_frames=0
         self.memory_pitch  = 0
         self.memory_yaw    = 0
+        self.x_correction  = 0
+        self.y_correction  = 0
 
         self.rc_th = []
         self.rc_r  = []
@@ -80,10 +82,14 @@ class PID:
         self.fake_y= []
         self.sen_p = []
         self.sen_y = []
-        self.cam=cam_orientation
+        self.cam   = cam_orientation
         self.cam_x = []
         self.cam_y = []
         self.cam_z = []
+
+        self.aim_y =  YT
+        self.aim_x =  XT
+        self.aim_z =  ZT
 
         self.Kp_z     = K_z[0]
         self.Ki_z     = K_z[1]
@@ -300,9 +306,9 @@ class PID:
 
     def controller_out(self,current_data:PoseStamped):
         # getting feedback (current data)
-        current_z   = current_data.pose.position.z
-        current_x   = current_data.pose.position.x+0.26
-        current_y   = current_data.pose.position.y+0.12 
+        current_z   = current_data.pose.position.z-self.aim_z
+        current_x   = current_data.pose.position.x-self.aim_x
+        current_y   = current_data.pose.position.y-self.aim_y
         current_yaw = current_data.pose.orientation.z
 
 
@@ -531,7 +537,7 @@ if __name__ == '__main__':
         K_pitch = [-30, 0, 0]
         K_yaw   = [0, 0, 0]
 
-        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation=180.0)
+        pid = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation=180.0,XT=0,YT=0,ZT=1)
         pid.main()
 
     except KeyboardInterrupt:
