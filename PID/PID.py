@@ -157,9 +157,9 @@ class PID:
         self.pub = rospy.Publisher("/drone_command",PlutoMsg,queue_size=10)
         self.arm(self.pub)
         rospy.Subscriber("Detection",PoseStamped,self.controller_out)
-        rospy.Subscriber("Kp_z",Float32,self.setKp_z)
-        rospy.Subscriber("Kp_roll",Float32,self.setKp_roll)
-        rospy.Subscriber("Kp_pitch",Float32,self.setKp_pitch)
+        #rospy.Subscriber("Kp_z",Float32,self.setKp_z)
+        #rospy.Subscriber("Kp_roll",Float32,self.setKp_roll)
+        #rospy.Subscriber("Kp_pitch",Float32,self.setKp_pitch)
 
 
 #     def set_limits(self, min: float, max: float) -> None:
@@ -347,12 +347,12 @@ class PID:
 
             #obj.rcYaw      = int(self.update_yaw(current_yaw))
             obj.rcYaw      = 1500
-        #self.Dterm_pitch = -2 * self.Kd_pitch * (feedback_pitch_filtered - self.last_feedback_pitch_filtered)
+            #self.Dterm_pitch = -2 * self.Kd_pitch * (feedback_pitch_filtered - self.last_feedback_pitch_filtered)
 
-        # output = P + I + D
-        output = self.Pterm_pitch + self.Iterm_pitch + self.Dterm_pitch
+            # output = P + I + D
+            #output = self.Pterm_pitch + self.Iterm_pitch + self.Dterm_pitch
 
-        # output limits
+            # output limits
             obj.rcAUX4     = 1500
             obj.rcAUX3     = 1500
             obj.rcAUX2     = 1500
@@ -527,17 +527,17 @@ class PID:
             self.df['time'] = time.time()
             self.df.to_csv('Data.csv')               
 
-    def setKp_z(self,msg:Float32):
-        self.Kp_z = msg.data
+    # def setKp_z(self,msg:Float32):
+    #     self.Kp_z = msg.data
 
-    def setKp_roll(self,msg:Float32):
-        self.Kp_roll  = msg.data
+    # def setKp_roll(self,msg:Float32):
+    #     self.Kp_roll  = msg.data
 
-    def setKp_pitch(self,msg:Float32):
-        self.Kp_pitch = msg.data
+    # def setKp_pitch(self,msg:Float32):
+    #     self.Kp_pitch = msg.data
 
-    def setKp_yaw(self,msg:Float32):
-        self.Kp_yaw   = msg.data
+    # def setKp_yaw(self,msg:Float32):
+    #     self.Kp_yaw   = msg.data
 
     def main(self):
         rate=rospy.Rate(50)
