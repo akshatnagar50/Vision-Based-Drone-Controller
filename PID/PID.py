@@ -327,37 +327,34 @@ class PID:
         current_yaw = current_data.pose.orientation.z
 
 
-
-
-        #altitude_PID_output = self.update_z(current_z)
-
         if current_z>0:
-            # rc outputs
-            self.current_consecutive_frames=0
             
+            self.current_consecutive_frames=0         
             self.df = pd.DataFrame()
+            
+            # rc outputs
             obj = PlutoMsg()
             obj.rcThrottle = int(self.update_z(current_z,1200,1900))
-            self.memory_thr = obj.rcThrottle
-
-            obj.rcPitch    = int(self.update_pitch((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))),1000,2000))
-            self.memory_pitch = obj.rcPitch
-            obj.rcRoll     = int(self.update_roll(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)),1000,2000))
-            self.memory_roll = obj.rcRoll
-
+            obj.rcPitch    = int(self.update_pitch((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))),1000,2000))            
+            obj.rcRoll     = int(self.update_roll(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)),1000,2000))            
             #obj.rcYaw      = int(self.update_yaw(current_yaw))
             obj.rcYaw      = 1500
-
             obj.rcAUX4     = 1500
             obj.rcAUX3     = 1500
             obj.rcAUX2     = 1500
             obj.rcAUX1     = 1500
+            self.pub.publish(obj)
 
+            self.memory_thr = obj.rcThrottle
+            self.memory_pitch = obj.rcPitch
+            self.memory_roll = obj.rcRoll
+            
             print(time.time())
             print("rcThrottle = ",obj.rcThrottle)
             print("rcRoll = ",obj.rcRoll)
             print("rcPitch",obj.rcPitch)
             print(" ")
+            
             # storing data
             self.df = pd.DataFrame()
             self.rc_th.append(obj.rcThrottle)
@@ -372,7 +369,7 @@ class PID:
             self.cam_z.append(current_data.pose.position.z)
             self.fake_x.append((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))))
             self.fake_y.append(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)))
-            self.pub.publish(obj)
+            
 
             self.df['rc_th']     =      self.rc_th
             self.df['rc_r ']     =      self.rc_r 
@@ -419,7 +416,7 @@ class PID:
             self.cam_z.append(current_data.pose.position.z)
             self.fake_x.append((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))))
             self.fake_y.append(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)))
-            self.pub.publish(obj)
+           
 
 
             self.df['rc_th']         =    self.rc_th
@@ -466,7 +463,7 @@ class PID:
             self.cam_z.append(current_data.pose.position.z)
             self.fake_x.append((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))))
             self.fake_y.append(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)))
-            self.pub.publish(obj)
+            
             self.df['rc_th'] = self.rc_th
             self.df['rc_r '] = self.rc_r 
             self.df['rc_p '] = self.rc_p 
@@ -509,7 +506,7 @@ class PID:
             self.cam_z.append(current_data.pose.position.z)
             self.fake_x.append((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))))
             self.fake_y.append(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)))
-            self.pub.publish(obj)
+            
             self.df['rc_th'] = self.rc_th
             self.df['rc_r '] = self.rc_r 
             self.df['rc_p '] = self.rc_p 
