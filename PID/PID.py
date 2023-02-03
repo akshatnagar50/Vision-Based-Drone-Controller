@@ -16,7 +16,6 @@ Things to do:
 
 
 #!/usr/bin/env python3
-from cmath import inf
 import time
 import math
 import rospy
