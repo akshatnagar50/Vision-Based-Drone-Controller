@@ -5,13 +5,19 @@ import cv2
 import cv2.aruco as aruco
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2,cv2.CAP_DSHOW)
+print(cap.get(cv2.CAP_PROP_FRAME_WIDTH),cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+width = 1920
+height = 1080
+cap.set(cv2.CAP_PROP_FRAME_WIDTH,width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT,height)
+print(cap.get(cv2.CAP_PROP_FRAME_WIDTH),cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 if True:
     mtx = np.array([[698.30269162,   0,         482.23369024],
     [  0,         699.30531713, 281.24277949],
     [  0,           0,           1.        ]])
-    # change this after calibration
+    # change this after calibratioCAP_PROP_FRAME_WIDTHn
 
     dist = np.array([[-0.14822482,  0.52992297, -0.005417,   -0.00265437, -0.75054646]])
     # change this after calibration
@@ -20,6 +26,8 @@ if True:
 
 while True:
     ret, frame = cap.read()
+    print(frame.shape)
+    
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     params = aruco.DetectorParameters_create()
     corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters = params)
@@ -49,11 +57,12 @@ while True:
 
 
 
-    print("Roll:" + str(r))
-    print("Pitch:" + str(p))
-    print("Yaw:" + str(y))
-    print("Height:" + str(marker_height))
-    print("")
+    # print("Roll:" + str(r))
+    # print("Pitch:" + str(p))
+    # print("Yaw:" + str(y))
+    # print("Height:" + str(marker_height))
+    # print("")
+    # print(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
 
     cv2.imshow('Frame', frame)
