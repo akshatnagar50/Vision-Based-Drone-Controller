@@ -109,12 +109,9 @@ class PID:
 
         # self.target = target
 
-        # setting the initial Derivative&Integral term as 0
-<<<<<<< HEAD
+        # setting the initial P,I&D term as 0
         self.Pterm_z             = 0
-=======
         self.Pterm_z             = 0 
->>>>>>> e40cf86c384fbd15a1c655e7c9e54c46015f0499
         self.Dterm_z             = 0   
         self.Iterm_z             = 0
         self.Pterm_roll          = 0
@@ -338,7 +335,7 @@ class PID:
         if current_z>0:
             # rc outputs
             self.current_consecutive_frames=0
-            altitude_PID_output = self.update_z(current_z,1200,2000)
+            
             self.df = pd.DataFrame()
             obj = PlutoMsg()
             obj.rcThrottle = int(self.update_z(current_z,1200,1900))
@@ -351,19 +348,14 @@ class PID:
 
             #obj.rcYaw      = int(self.update_yaw(current_yaw))
             obj.rcYaw      = 1500
-            #self.Dterm_pitch = -2 * self.Kd_pitch * (feedback_pitch_filtered - self.last_feedback_pitch_filtered)
 
-            # output = P + I + D
-            #output = self.Pterm_pitch + self.Iterm_pitch + self.Dterm_pitch
-
-            # output limits
             obj.rcAUX4     = 1500
             obj.rcAUX3     = 1500
             obj.rcAUX2     = 1500
             obj.rcAUX1     = 1500
 
             print(time.time())
-            print("rcThrottle = ",altitude_PID_output)
+            print("rcThrottle = ",obj.rcThrottle)
             print("rcRoll = ",obj.rcRoll)
             print("rcPitch",obj.rcPitch)
             print(" ")
@@ -382,8 +374,7 @@ class PID:
             self.fake_x.append((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))))
             self.fake_y.append(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)))
             self.pub.publish(obj)
-            self.plotlist_throttle.append(int(altitude_PID_output-1000)/10)
-            self.plotlist_height.append(int(current_z*100))
+
             self.df['rc_th']     =      self.rc_th
             self.df['rc_r ']     =      self.rc_r 
             self.df['rc_p ']     =      self.rc_p 
@@ -430,9 +421,8 @@ class PID:
             self.fake_x.append((current_x*math.sin((-cam_orientation+current_yaw)*math.pi/180)-current_y*math.cos(math.pi/180*(-cam_orientation+current_yaw))))
             self.fake_y.append(current_x*math.cos(math.pi/180*(-cam_orientation+current_yaw))+current_y*math.sin(math.pi/180*(-cam_orientation+current_yaw)))
             self.pub.publish(obj)
-<<<<<<< HEAD
-            self.plotlist_throttle.append(int(altitude_PID_output-1000)/10)
-            self.plotlist_height.append(int(current_z*100))
+
+
             self.df['rc_th']         =    self.rc_th
             self.df['rc_r ']         =    self.rc_r 
             self.df['rc_p ']         =    self.rc_p 
@@ -445,22 +435,10 @@ class PID:
             self.df['cam_z']         =    self.cam_z
             self.df['fake_x']        =    self.fake_y
             self.df['fake_y']        =    self.fake_x
-=======
-            self.df['rc_th'] = self.rc_th
-            self.df['rc_r '] = self.rc_r 
-            self.df['rc_p '] = self.rc_p 
-            self.df['rc_y '] = self.rc_y 
-            self.df['sen_r'] = self.sen_r
-            self.df['sen_p'] = self.sen_p
-            self.df['sen_y'] = self.sen_y
-            self.df['cam_x'] = self.cam_x
-            self.df['cam_y'] = self.cam_y
-            self.df['cam_z'] = self.cam_z
-            self.df['fake_x']= self.fake_y
-            self.df['fake_y']= self.fake_x
->>>>>>> e40cf86c384fbd15a1c655e7c9e54c46015f0499
+
             self.df['time'] = time.time()
             self.df.to_csv('Data.csv')
+            
         if current_z<0 and self.current_consecutive_frames>40 and self.current_consecutive_frames<300:
             obj=PlutoMsg()
             obj.rcThrottle = 1000
