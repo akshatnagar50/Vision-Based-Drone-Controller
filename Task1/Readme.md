@@ -9,5 +9,5 @@ In order to execute the wrapper, the following steps can be followed.
 - Navigate to the Task 1 folder
 - Connect to the drone's wifi
 - Run the PlutoArm.py file. 
-- Control the drone using the keyboard commands
+- Control the drone using the keyboard commands  
 The teleop commands are the same ones used in the ROS teleop topic. 
