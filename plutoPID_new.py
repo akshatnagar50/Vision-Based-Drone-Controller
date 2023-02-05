@@ -723,12 +723,12 @@ if __name__ == '__main__':
     userRC = USER_RC()
 
     # PID Constants
-    K_z     = [2.5, 0,  0]
-    K_pitch = [-0.5, 0, 0] 
-    K_roll  = [-0.5 , 0, 0] 
+    K_z     = [2.5, 0.01,  0]
+    K_pitch = [-4.5, 0, 0] 
+    K_roll  = [-4.5, 0, 0] 
     K_yaw   = [0, 0, 0]
 
-    plutoPID = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation= 45.0,XT=0,YT=0,ZT=200)
+    plutoPID = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation= 90.0,XT=0,YT=0,ZT=200)
     
     thread = Thread(target=writeFunction)
     print('Write Thread Started')
