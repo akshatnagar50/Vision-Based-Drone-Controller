@@ -697,10 +697,6 @@ def aruco_detect():
             #-- Draw the detected marker and put a reference frame over it
             aruco.drawDetectedMarkers(frame, corners)
             cv2.drawFrameAxes(frame, camera_matrix, camera_distortion, rvec, tvec, 10)
-
-            #-- Print the tag position in camera frame
-            #str_position = "MARKER Position x=%.0f  y=%.0f  z=%.0f"%(tvec[0], tvec[1], tvec[2])
-            #cv2.putText(frame, str_position, (0, 100), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
             
             x1 =  tvec[0]
             y1 =  tvec[1]
@@ -724,12 +720,7 @@ def aruco_detect():
             plutoPID.controller_out()
 
         cv2.waitKey(1)
-            # cv2.destroyAllWindows()
-            # print('Closing all windows')
-            # break
-        #time.sleep(0.02) # WILL HAVE TO CHECK THIS
-        #
-        #cv2.circle(frame, (int(280/2), int(620/2)), 10, (0, 0, 255), 2, cv2.LINE_AA)
+
         #--- Display the frame
         frame_resized = cv2.resize(frame.copy(),None,fx=0.3,fy=0.3)
         cv2.imshow('frame', frame_resized)
@@ -743,7 +734,6 @@ NONE_COMMAND = 0
 TAKE_OFF = 1
 LAND = 2
 
-# commandType = 0
         
 def writeFunction():
     # Function to write to the drone
@@ -769,7 +759,7 @@ def writeFunction():
             userRC.commandType = NONE_COMMAND
 
 
-        #Reading Yaw Value
+        #-------- Reading Yaw Value from IMU ----------#
         data = client.recv(1024)
         segments = data.split(b'$M>')
         
@@ -777,11 +767,11 @@ def writeFunction():
             segment = b'$M>'+segment
             if len(segment) == 12:
                 if segment[4] == 108:
-                    roll = segment[5:7]  
-                    pitch = segment[7:9]
-                    yaw = segment[9:11]
-                    #print(segment[9]+256*segment[10])
-                    userRC.orientation_z = segment[9]+256*segment[10]  
+#                     roll = segment[5:7]  
+#                     pitch = segment[7:9]
+#                     yaw = segment[9:11]
+                    yaw = segment[9]+256*segment[10] # Little Endian Representation
+                    userRC.orientation_z = yaw
                     
         time.sleep(0.022)
 
@@ -822,11 +812,11 @@ def on_press(key):
             userRC.right_yaw()
         
         if key.char == 'f':
-            #----------------- MISSION --------------------#
+            #----------------- PID START --------------------#
             userRC.goto_called = True
         
         if key.char == 'h':
-            #----------------- MISSION HALT--------------------#
+            #----------------- PID HALT --------------------#
             userRC.goto_called = False
 
     
@@ -858,6 +848,8 @@ if __name__ == '__main__':
     K_yaw   = [0, 0, 0]
     # Creating an instance of the PID class to call the constructor
     plutoPID = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation= 90.0,XT=0,YT=0,ZT=200)
+    # ZT is 200 cm from the camera	
+	
     # Threading simultaneously running functions
     thread = Thread(target=writeFunction)
     print('Write Thread Started')
