@@ -5,8 +5,8 @@ The first task required us to develop a python Wrapper for the Drone Pluto 1.2 u
 ## Description
 Our python wrapper is capable of running on both Windows and Linux machines and relies on simple python socket communication. We have provided a very basic teleop frontend for the drone, which can be used to simply fly the drone using keyboard keys. The same endpoints can also be used to make a controller drontend similar to the one in the Pluto mobile application. 
 In order to execute the wrapper, the following steps can be followed. 
--Clone the Repository
--Navigate to the Task 1 folder
--Connect to the drone's wifi
--Run the PlutoArm.py file. 
--Control the drone using the keyboard commands
+- Clone the Repository
+- Navigate to the Task 1 folder
+- Connect to the drone's wifi
+- Run the PlutoArm.py file. 
+- Control the drone using the keyboard commands
