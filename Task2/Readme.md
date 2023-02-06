@@ -18,3 +18,13 @@ To run the file, we need to do the following:
 The hardware was giving us issues in providing for consistent throttle values, as explained and demonstrated in the video https://drive.google.com/file/d/1FYqVB6VO7ASdi389K2a-VSWthR2lI8Hi/view?usp=sharing
 Hence, we made use of a tethered setup to demonstrate the working of our PID. You can see the roll and pitch corrections in the video https://drive.google.com/file/d/1d8S6eVZEuDbPjanBHCWFgLln-T9JxUa6/view?usp=share_link as well as their screen views https://drive.google.com/file/d/1CgVmbV8r6yZjJ937asmtzSBSgySwIxhS/view?usp=share_link and https://drive.google.com/file/d/1iN3c9rZqiCp0yz-l7tLtP2NruTPFqu24/view?usp=share_link  
 The videos verify the algorithmic correctness of the controller. The precise PID gain tuning is somewhat rough as it was difficult to achieve without consistent throttle values and altitude. 
+
+
+## File Structure
+plutoPID.py
+Runs the following Processes:
+1. writeFunction     : Generates MSP packets and send it to the drone
+2. readFunction     : Reads MSP packets from the drone and accesses the useful data
+3. aruco_detect     : Takes the webcam feed and estimates the pose in camera frame of reference
+4. PID                    : Generates userRC values based on the pose and setpoint 
+5. key_handling     : Generates userRC values from keyboard
