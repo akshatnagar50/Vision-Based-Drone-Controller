@@ -11,4 +11,4 @@ In order to execute the wrapper, the following steps can be followed.
 - Run the PlutoArm.py file. 
 - Control the drone using the keyboard commands  
 ## Submission video
-Please find the video at [(https://drive.google.com/file/d/1JOT3UtvXCk1xD3x8IDRCemADbwYyf3Qs/view?usp=sharing)]
+Please find the video at https://drive.google.com/file/d/1JOT3UtvXCk1xD3x8IDRCemADbwYyf3Qs/view?usp=sharing
