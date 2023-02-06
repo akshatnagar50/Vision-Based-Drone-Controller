@@ -21,7 +21,7 @@ The videos verify the algorithmic correctness of the controller. The precise PID
 
 
 ## File Structure
-plutoPID.py
+PID.py
 Runs the following Processes:
 1. writeFunction     : Generates MSP packets and send it to the drone
 2. readFunction     : Reads MSP packets from the drone and accesses the useful data
