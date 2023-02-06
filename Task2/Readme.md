@@ -14,3 +14,7 @@ To run the file, we need to do the following:
 - Run the PID.py code
 - Arm the drone using spacebar
 - Run the visual PID using the F key
+## Videos
+The hardware was giving us issues in providing for consistent throttle values, as explained and demonstrated in the video https://drive.google.com/file/d/1FYqVB6VO7ASdi389K2a-VSWthR2lI8Hi/view?usp=sharing
+Hence, we made use of a tethered setup to demonstrate the working of our PID. You can see the roll and pitch corrections in the video https://drive.google.com/file/d/1d8S6eVZEuDbPjanBHCWFgLln-T9JxUa6/view?usp=share_link as well as their screen views https://drive.google.com/file/d/1CgVmbV8r6yZjJ937asmtzSBSgySwIxhS/view?usp=share_link and https://drive.google.com/file/d/1iN3c9rZqiCp0yz-l7tLtP2NruTPFqu24/view?usp=share_link  
+The videos verify the algorithmic correctness of the controller. The precise PID gain tuning is somewhat rough as it was difficult to achieve without consistent throttle values and altitude. 
