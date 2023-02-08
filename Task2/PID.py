@@ -308,18 +308,13 @@ class PID:
         #self.Dterm_pitch = -2 * self.Kd_pitch * (feedback_pitch_filtered - self.last_feedback_pitch_filtered)
 
         
-
-        # output limits
         # I term  (With anti-windup)
         if ((output>max and error>0) or (output<min and error<0)):
             self.Iterm_z = self.Iterm_z
         else:
             self.Iterm_z += (error + self.last_error_z) * 0.5 * self.Ki_z * self.dt
 
-        
-
-
-        # output limits
+        # D term
         self.Dterm_z  = (-2 * self.Kd_z * (feedback - self.last_feedback_z)
                       + (2 * self.tau - self.dt) * self.Dterm_z / (2 * self.tau + self.dt))
 
@@ -343,14 +338,22 @@ class PID:
 
 
     def update_roll(self, feedback: float,min,max) -> float:
+		
+	# output = P + I + D
+        output = self.Pterm_roll + self.Iterm_roll + self.Dterm_roll
 
         error = (0 - feedback)
-        feedback_roll_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_roll_filtered
+        # feedback_roll_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_roll_filtered
 
         # P term
         self.Pterm_roll  = 1500 + self.Kp_roll * error 
-        # I term
-        self.Iterm_roll += (error + self.last_error_roll) * 0.5 * self.Ki_roll * self.dt
+	
+        # I term  (With anti-windup)
+        if ((output>max and error>0) or (output<min and error<0)):
+            self.Iterm_roll = self.Iterm_roll
+        else:
+            self.Iterm_roll += (error + self.last_error_roll) * 0.5 * self.Ki_roll * self.dt
+	
         # D term
         self.Dterm_roll  = (-2 * self.Kd_roll * (feedback - self.last_feedback_roll)
                          + (2 * self.tau - self.dt) * self.Dterm_roll / (2 * self.tau + self.dt))
@@ -358,8 +361,7 @@ class PID:
         # Dterm with exponential smoothing:
         #self.Dterm_roll = -2 * self.Kd_roll * (feedback_roll_filtered - self.last_feedback_roll_filtered)
 
-        # output = P + I + D
-        output = self.Pterm_roll + self.Iterm_roll + self.Dterm_roll
+        
 
         # output limits
         if output < min:
@@ -375,14 +377,22 @@ class PID:
         return output
 
 
-    def update_pitch(self, feedback: float,min,max) -> float: 
-
+    def update_pitch(self, feedback: float,min,max) -> float:
+	
+	# output = P + I + D
+        output = self.Pterm_pitch + self.Iterm_pitch + self.Dterm_pitch
+	
         error = (0 - feedback)
-        feedback_pitch_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_pitch_filtered
+        #feedback_pitch_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_pitch_filtered
         # P term
         self.Pterm_pitch  = 1500 + self.Kp_pitch * error
-        # I term
-        self.Iterm_pitch += (error + self.last_error_pitch) * 0.5 * self.Ki_pitch * self.dt
+	
+        # I term  (With anti-windup)
+        if ((output>max and error>0) or (output<min and error<0)):
+            self.Iterm_pitch = self.Iterm_pitch
+        else:
+            self.Iterm_pitch += (error + self.last_error_pitch) * 0.5 * self.Ki_pitch * self.dt
+	
         # D term
         self.Dterm_pitch  = (-2 * self.Kd_pitch * (feedback - self.last_feedback_pitch)
                           + (2 * self.tau - self.dt) * self.Dterm_pitch / (2 * self.tau + self.dt))
@@ -390,8 +400,6 @@ class PID:
         # Dterm with exponential smoothing:
         #self.Dterm_pitch = -2 * self.Kd_pitch * (feedback_pitch_filtered - self.last_feedback_pitch_filtered)
 
-        # output = P + I + D
-        output = self.Pterm_pitch + self.Iterm_pitch + self.Dterm_pitch
 
         # output limits
         if output < min:
@@ -409,15 +417,24 @@ class PID:
 
 
     def update_yaw(self, feedback: float,min,max) -> float:
+		
+	# output = P + I + D
+        output = self.Pterm_yaw + self.Iterm_yaw + self.Dterm_yaw
+	
         # if feedback>180:Dt
         #     feedback = feedback -360
         error = (180 - feedback)
-        feedback_yaw_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_yaw_filtered
+	# feedback_yaw_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_yaw_filtered
 
         # P term
         self.Pterm_yaw  = 1500 + self.Kp_yaw * error
-        # I term
-        self.Iterm_yaw += (error + self.last_error_yaw) * 0.5 * self.Ki_yaw * self.dt
+	
+        # I term  (With anti-windup)
+        if ((output>max and error>0) or (output<min and error<0)):
+            self.Iterm_yaw = self.Iterm_yaw
+        else:
+            self.Iterm_yaw += (error + self.last_error_yaw) * 0.5 * self.Ki_yaw * self.dt
+	
         # D term
         self.Dterm_yaw  = (-2 * self.Kd_yaw * (feedback - self.last_feedback_yaw)
                         + (2 * self.tau - self.dt) * self.Dterm_yaw / (2 * self.tau + self.dt))
@@ -425,8 +442,7 @@ class PID:
         # Dterm with exponential smoothing:
         #self.Dterm_yaw = -2 * self.Kd_yaw * (feedback_yaw_filtered - self.last_feedback_yaw_filtered)
 
-        # output = P + I + D
-        output = self.Pterm_yaw + self.Iterm_yaw + self.Dterm_yaw
+        
 
         # output limits
         if output < min:
