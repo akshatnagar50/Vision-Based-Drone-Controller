@@ -53,8 +53,8 @@ class USER_RC():
         self.rcYaw = 1500
         self.rcAUX1 = 1500
         self.rcAUX2 = 1500
-        self.rcAUX3 = 1000 #Throttle
-        #self.rcAUX3 = 1500 #Altitude Hold Mode 
+        #self.rcAUX3 = 1000 #Throttle
+        self.rcAUX3 = 1500 #Altitude Hold Mode 
         self.rcAUX4 = 1000
         self.commandType = 0
 
@@ -74,7 +74,7 @@ class USER_RC():
         self.battery = -1
 
         self.trim_pitch = 0
-        self.trim_roll = -18
+        self.trim_roll = 0
 
     # def goto(self):
     #     # Example usage
@@ -186,7 +186,7 @@ class PID:
         #Memory for out of detection frames
         self.memory_thr        = 0
         self.memory_roll       = 0 
-        self.current_consecutive_frames = 0
+        self.consecutive_undetected_frames = 0
         self.memory_pitch      = 0
         self.memory_yaw        = 0
         self.x_correction      = 0
@@ -195,7 +195,7 @@ class PID:
 
         #Recording the flight data
         self.df = pd.DataFrame(columns=['rc_th','rc_r','rc_p','rc_y','sen_roll','sen_pitch','sen_yaw','relative_yaw',
-                                        'cam_x','cam_y','cam_z','drone_error_x','drone_error_y','mode','AUX2','AUX3','Battery','time step'])
+                                        'cam_x','cam_y','cam_z','estimated_x','estimated_y','drone_error_x','drone_error_y','mode','AUX2','AUX3','Battery','time step'])
 
         # self.rc_th = []
         # self.rc_r  = []
@@ -272,7 +272,7 @@ class PID:
         self.last_output_pitch   = 0
         self.last_output_yaw     = 0
 
-        self.last_time = time.time()   
+           
 
 #         self.set_limits(1000, 2000)
 
@@ -285,6 +285,16 @@ class PID:
         
         self.drone_err_x = 1000
         self.drone_err_y = 1000
+
+        self.estimated_x = 1000
+        self.estimated_y = 1000
+
+        self.velo_x    = 0
+        self.velo_y    = 0
+        self.timestep  = 0
+        self.last_x    = 0
+        self.last_y    = 0
+        self.last_time = time.time()
 
         # Commented out ROS commands
 
@@ -312,7 +322,7 @@ class PID:
         # feedback_z_filtered = self.alpha*feedback + (1-self.alpha)*self.last_feedback_z_filtered
 
         # P term
-        self.Pterm_z  = 1400 + self.Kp_z * error
+        self.Pterm_z  = 1500 + self.Kp_z * error
 
         #self.Dterm_pitch = -2 * self.Kd_pitch * (feedback_pitch_filtered - self.last_feedback_pitch_filtered)
 
@@ -456,31 +466,47 @@ class PID:
         self.cam_err_z   = userRC.current_z-self.aim_z
         self.cam_err_x   = userRC.current_x-self.aim_x
         self.cam_err_y   = userRC.current_y-self.aim_y
+        self.throttle_upper=1700
+        self.throttle_lower=1400
+        self.roll_lower    =1400
+        self.pitch_lower   =1400
+        self.roll_upper    =1600
+        self.pitch_upper   =1600
         current_yaw = userRC.orientation_z ### GET THE YAW FROM WRAPPER
         relative_yaw = self.cam_orientation - current_yaw
 
+
+        if userRC.current_z>0 and self.consecutive_undetected_frames==0:
+            #This is executed when there is a detection and even previous frame was detected
+            self.timestep  =   time.time()-self.last_time
+            self.velo_x    =   (userRC.current_x-self.last_x)/self.timestep
+            self.velo_y    =   (userRC.current_y-self.last_y)/self.timestep
+            
         if userRC.current_z>0: 
             #As long as the drone is below the camera, this value is positive which indicates detection. 
-            #This if segment is executed when there is detectionfh
+            #This if segment is executed when there is detection
             
-            self.current_consecutive_frames=0       
-
+            self.consecutive_undetected_frames=  0       
+            self.last_time                 =  time.time()
+            self.last_x                    =  userRC.current_x
+            self.last_y                    =  userRC.current_y
             
             ### CONFUSED AF ABOUT NAMING CONVENTION
             # For now, pitch affects drone_y, roll affects drone_x
             # 2D Cartesian coordinates at the drone
 
             
-            self.drone_err_x = -self.cam_err_x*math.cos(math.pi/180*(relative_yaw))+self.cam_err_y*math.sin(math.pi/180*(relative_yaw))
-            self.drone_err_y = (self.cam_err_x*math.sin((relative_yaw)*math.pi/180)+self.cam_err_y*math.cos(math.pi/180*(relative_yaw)))
+            self.drone_err_x  = -self.cam_err_x*math.cos(math.pi/180*(relative_yaw))+self.cam_err_y*math.sin(math.pi/180*(relative_yaw))
+            self.drone_err_y  = (self.cam_err_x*math.sin((relative_yaw)*math.pi/180)+self.cam_err_y*math.cos(math.pi/180*(relative_yaw)))
             # rc outputs
-            userRC.rcThrottle = int(self.update_z(self.cam_err_z,1200,1900))
-            userRC.rcPitch    = int(self.update_pitch(self.drone_err_y,1000,2000))            
-            userRC.rcRoll     = int(self.update_roll(self.drone_err_x,1000,2000))            
+            userRC.rcThrottle = int(self.update_z(self.cam_err_z,self.throttle_lower,self.throttle_upper))
+            userRC.rcPitch    = int(self.update_pitch(self.drone_err_y,self.pitch_lower,self.pitch_upper))            
+            userRC.rcRoll     = int(self.update_roll(self.drone_err_x,self.roll_lower,self.roll_upper))            
             #userRC.rcYaw      = int(self.update_yaw(current_yaw))f
             userRC.rcYaw      = 1500
             userRC.rcAUX4     = 1500
-            userRC.rcAUX3     = 1000
+            # # userRC.rcAUX3     = 1000
+            # userRC.rcAUX3     = 1500
             userRC.rcAUX2     = 1500
             userRC.rcAUX1     = 1500
 
@@ -500,17 +526,24 @@ class PID:
             # Getting flight data        
           
         else: 
-            self.current_consecutive_frames+=1
+            self.consecutive_undetected_frames+=1
              # When drone is not detected by camera
 
         #When there is no detection for less than 40 consecutive frames
-        if userRC.current_z<0 and self.current_consecutive_frames<=40:
-            userRC.rcThrottle       =      self.memory_thr
-            userRC.rcPitch          =      self.memory_pitch
-            userRC.rcRoll           =      self.memory_roll
+        if userRC.current_z<0 and self.consecutive_undetected_frames<=40:
+            self.estimated_x = self.last_x+self.velo_x*(time.time()-self.last_time)
+            self.estimated_y = self.last_y+self.velo_y*(time.time()-self.last_time)
+            self.drone_err_x  = -(self.estimated_x)*math.cos(math.pi/180*(relative_yaw))+(self.estimated_y)*math.sin(math.pi/180*(relative_yaw))
+            self.drone_err_y  = (self.estimated_x)*math.sin((relative_yaw)*math.pi/180)+(self.estimated_y)*math.cos(math.pi/180*(relative_yaw))
+            # rc outputs
+            #userRC.rcThrottle = int(self.update_z(self.cam_err_z,self.throttle_lower,self.throttle_upper))
+            userRC.rcThrottle = self.memory_thr
+            userRC.rcPitch    = int(self.update_pitch(self.drone_err_y,self.pitch_lower,self.pitch_upper))            
+            userRC.rcRoll     = int(self.update_roll(self.drone_err_x,self.roll_lower,self.roll_upper))     
             userRC.rcYaw            =      1500
             userRC.rcAUX4           =      1500
-            userRC.rcAUX3           =      1000
+            # #userRC.rcAUX3           =      1000
+            # userRC.rcAUX3     = 1500
             userRC.rcAUX2           =      1500
             userRC.rcAUX1           =      1500
 
@@ -522,16 +555,21 @@ class PID:
    
             
         #FAIL SAFE 1: When the detection did not happen for 300 frames, reduce throttle
-        if userRC.current_z<0 and self.current_consecutive_frames>40 and self.current_consecutive_frames<300:
+        if userRC.current_z<0 and self.consecutive_undetected_frames>40 and self.consecutive_undetected_frames<300:
+            self.estimated_x = self.last_x+self.velo_x*(time.time()-self.last_time)
+            self.estimated_y = self.last_y+self.velo_y*(time.time()-self.last_time)
+            self.drone_err_x  = -(self.estimated_x)*math.cos(math.pi/180*(relative_yaw))+(self.estimated_y)*math.sin(math.pi/180*(relative_yaw))
+            self.drone_err_y  = (self.estimated_x)*math.sin((relative_yaw)*math.pi/180)+(self.estimated_y)*math.cos(math.pi/180*(relative_yaw))
             userRC.rcThrottle = 1000
-            userRC.rcPitch    = 1500
-            userRC.rcRoll     = 1500
+            userRC.rcPitch    = int(self.update_pitch(self.drone_err_y,self.pitch_lower,self.pitch_upper))            
+            userRC.rcRoll     = int(self.update_roll(self.drone_err_x,self.roll_lower,self.roll_upper))  
             userRC.rcYaw      = 1500
             userRC.rcAUX4     = 1500
-            userRC.rcAUX3     = 1000
+            # #userRC.rcAUX3     = 1000
+            # userRC.rcAUX3     = 1500
             userRC.rcAUX2     = 1500
             userRC.rcAUX1     = 1500
-
+ 
             userRC.mode = 'Controller Default'
             # print("default_thr = ",1000)
             # print("default_Roll = ",1500)
@@ -540,13 +578,14 @@ class PID:
               
 
         #FAIL SAFE 2: When detection did not happen for more than 300 frames, disarm
-        if userRC.current_z<0 and self.current_consecutive_frames>=300:
-            userRC.rcThrottle = 1500
+        if userRC.current_z<0 and self.consecutive_undetected_frames>=300:
+            userRC.rcThrottle = 1200
             userRC.rcPitch    = 1500
             userRC.rcRoll     = 1500
             userRC.rcYaw      = 1500
             userRC.rcAUX4     = 1000
-            userRC.rcAUX3     = 1000
+            # userRC.rcAUX3     = 1000
+            # userRC.rcAUX3     = 1500
             userRC.rcAUX2     = 1500
             userRC.rcAUX1     = 1500
 
@@ -567,8 +606,10 @@ class PID:
              userRC.current_x,
              userRC.current_y,
              userRC.current_z,
-             -self.cam_err_x*math.cos(math.pi/180*(relative_yaw))+self.cam_err_y*math.sin(math.pi/180*(relative_yaw)),
-             (self.cam_err_x*math.sin((relative_yaw)*math.pi/180)+self.cam_err_y*math.cos(math.pi/180*(relative_yaw))),
+             self.estimated_x,
+             self.estimated_y,
+             self.drone_err_x,
+             self.drone_err_y,
              userRC.mode,
              userRC.rcAUX2,
              userRC.rcAUX3,
@@ -691,6 +732,7 @@ def writeFunction():
         print('R:{}, P:{}, T:{}, Y:{} ,A1:{}, A2:{}, A3:{}, A4:{}'.format(droneRC[0],droneRC[1],droneRC[2],droneRC[3],droneRC[4],droneRC[5],droneRC[6],droneRC[7]),end='  ')
         print('x:{}, y:{}, z:{} '.format(round(userRC.current_x),round(userRC.current_y),round(userRC.current_z)),end=' ')
         print('Roll: {}, Pitch: {}, Yaw: {}'.format(round(userRC.orientation_x),round(userRC.orientation_y),round(userRC.orientation_z)),end=' ')
+        print('Estimated_x: {}, Estimated_y: {}'.format(round(plutoPID.estimated_x),round(plutoPID.estimated_y)),end=' ')
         print('drone_err_x:{}, drone_err_y:{}, drone_err_z:{}, mode:{}, battery:{}'.format(round(plutoPID.drone_err_x),round(plutoPID.drone_err_y),round(plutoPID.cam_err_z),userRC.mode,userRC.battery))
         sendRequestMSP_GET_DEBUG(requests)
         if (userRC.commandType != NONE_COMMAND):
@@ -842,12 +884,12 @@ if __name__ == '__main__':
     userRC = USER_RC()
 
     # PID Constants
-    K_z     = [3.5, 0.01, 1]
-    K_pitch = [0 , -0, 0] 
-    K_roll  = [0, -0, 0] 
+    K_z     = [3.5, 0, 0]
+    K_pitch = [0.5 , -0, 0] 
+    K_roll  = [0.5, -0, 0] 
     K_yaw   = [0, 0, 0]
     # Creating an instance of the PID class to call the constructor
-    plutoPID = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation= 180.0,XT=0,YT=0,ZT=125)
+    plutoPID = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation= 180.0,XT=0,YT=0,ZT=199)
     # ZT is 200 cm from the camera	
     # Threading simultaneously running functions
     thread = Thread(target=writeFunction)
