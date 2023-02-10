@@ -175,9 +175,10 @@ class PID:
     Implements a PID controller.
     """
 
-    def __init__(self,K_z: list, K_roll: list, K_pitch: list, K_yaw: list, dt:float, tau:float, alpha:float,cam_orientation:float,XT:float,YT:float,ZT:float) -> None:
+    def __init__(self,K_z: list, K_roll: list, K_pitch: list, K_yaw: list, dt:float, tau:float, alpha:float,cam_orientation:float,XT:float,YT:float,ZT:float,beta:float) -> None:
 
-        self.dt       = dt 
+        self.beta = beta
+	self.dt       = dt 
         # time step for I_term in PID
         self.tau      = tau 
         # Derivative filter time constant
@@ -272,6 +273,8 @@ class PID:
         self.last_output_pitch   = 0
         self.last_output_yaw     = 0
 
+	self.last_velo_x = 0
+	self.last_velo_y = 0
            
 
 #         self.set_limits(1000, 2000)
@@ -480,7 +483,12 @@ class PID:
             #This is executed when there is a detection and even previous frame was detected
             self.timestep  =   time.time()-self.last_time
             self.velo_x    =   (userRC.current_x-self.last_x)/self.timestep
+	    self.velo_x    =   self.velo_x*self.beta + (1-self.beta)*self.last_velo_x
             self.velo_y    =   (userRC.current_y-self.last_y)/self.timestep
+	    self.velo_y    =   self.velo_y*self.beta + (1-self.beta)*self.last_velo_y
+	
+	    self.last_velo_x = self.velo_x
+	    self.last_velo_y = self.velo_y
             
         if userRC.current_z>0: 
             #As long as the drone is below the camera, this value is positive which indicates detection. 
@@ -889,7 +897,7 @@ if __name__ == '__main__':
     K_roll  = [0.5, -0, 0] 
     K_yaw   = [0, 0, 0]
     # Creating an instance of the PID class to call the constructor
-    plutoPID = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation= 180.0,XT=0,YT=0,ZT=199)
+    plutoPID = PID(K_z,K_roll,K_pitch,K_yaw,dt=0.1,tau=0.06,alpha = 0.5,cam_orientation= 180.0,XT=0,YT=0,ZT=199,beta=0.5)
     # ZT is 200 cm from the camera	
     # Threading simultaneously running functions
     thread = Thread(target=writeFunction)
