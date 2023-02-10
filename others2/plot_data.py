@@ -30,7 +30,7 @@ CONTENT_STYLE = {
 
 sidebar = html.Div(
     [
-        html.H2("Drona", className="display-4"),
+        html.H2("Team 13-Drona", className="display-4"),
         html.Hr(),
         html.P(
             "Plots for the data collected from the drone", className="lead"
