@@ -1,4 +1,10 @@
 # Task 2 Submission
+
+## Edits on presentation day
+- 2 new files added `hover_presentation_day.py` and `rectangle_presentation_day.py`
+- Files may look similar but they have a different `setpoint` element (1 setpoint is basically just hovering)
+- On running `rectangle_presentaion_day.py` the drone hovers to a predefined height and then passes through four different setpoints forming a rectangle.
+
 ## Problem Statement for Task 2
 The problem statement for the second task requires us to develop another layer of control over the drone than the PID that is built into the drone (To control the motors using RC commands). 
 This is to be achieved with the help of an aruco marker placed on top of the drone and a ceiling mounted camera. Using this, we need to hover the drone in one position and then make it move in 
