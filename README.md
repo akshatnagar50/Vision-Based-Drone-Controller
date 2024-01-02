@@ -6,6 +6,8 @@ Official repository for the Inter IIT Tech aerial robotics PS Team 13
 
 - **python_wrapper: Task 1**
    - *Description:* Platform-independent and User-friendly Python API to communicate with the drone developed by transforming the ROS-based communication architecture
+     ![Communication Architecture](https://github.com/akshatnagar50/Vision-Based-Drone-Controller/blob/main/python_wrapper/final_msp_fc.png)
+
 
 - **vision_based_PID: Task 2**
    - *Description:* Within this directory, you'll find implementations related to a vision-based Proportional-Integral-Derivative (PID) controller. It includes algorithms and utilities tailored for vision-based control systems, enabling precise control by leveraging visual feedback. In this task, we developed a multi-axis PID controller using vision feedback. We achieved stable hovering and accomplished the rectangular motion of a single drone.
